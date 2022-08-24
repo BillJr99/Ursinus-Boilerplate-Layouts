@@ -386,7 +386,9 @@ boilerplate:
     <li>What will I do?</li>
     </ul>
     
-    
+    {% if page.info.questions %}
+    <p>{{ page.info.questions }}</p>
+    {% endif %}
     
     
     <a name="resources"></a>
