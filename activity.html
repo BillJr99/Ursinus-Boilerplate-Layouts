@@ -41,6 +41,12 @@ embed_directions_video: "You can play the following video right here from your b
 <div id="main" role="main">
   <div class="archive">
     <h1 class="page__title">{{ page.title }}</h1>
+    
+    {% if page.info.notes %}
+    <p>
+    <a href="{{ page.info.notes }}" target="_blank">Class Notes</a>
+    </p>
+    {% endif %}
 
     {% if page.info.prev or page.info.next %}
     <p>
