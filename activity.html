@@ -91,6 +91,16 @@ embed_directions_video: "You can play the following video right here from your b
     {{ layout.directions }}
     {% endif %}  
     
+    {% if page.info.guidingquestions %}
+    <hr style="border: 1px solid black;"/>
+    <h2>Guiding Questions</h2>
+    <ul>
+    {% for question in page.info.guidingquestions %}
+    <li>{{ question }}</li>
+    {% endfor %}
+    </ul>
+    {% endif %}
+    
     {% if page.info.models %}
     {% assign model_num = 1 %}
     <hr style="border: 1px solid black;"/>
