@@ -214,7 +214,11 @@ boilerplate:
     <ul>
     <li><a href="{{layout.boilerplate.links.credithours}}">Credit Hours</a> include "contact time" in the classroom and outside course work.  It is expected that the sum of classroom time and outside course work time should add up to three times the listed credit hours per week.</li>
     </ul>
-    {% endif %}    
+    {% endif %}  
+
+    {% if page.info.designation %}
+    <li><strong>Course Designation:</strong> {{ page.info.designation }}</li>
+    {% endif %}
     
     {% if page.permalink %}
     <li><strong>Course Webpage:</strong> <a href="{{site.baseurl}}">{{site.url}}{{site.baseurl}}</a></li>
