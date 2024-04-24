@@ -123,6 +123,7 @@ mynetid: wmongan
         {% endif %}
         
         <button type = "button" onclick = "if(document.getElementById('studentnetid').value.length > 0) runCode(); else correctArea.innerHTML = '<h3><font color = #AA0000>Please enter your netid first!</font></h3>';" id="runbutton" disabled>▶ Run</button>&nbsp;<button onclick="saveCode()">Save Work</button>&nbsp;<button onclick="loadCode()">Load Saved Work</button>&nbsp;<button onclick="resetCode()">Clear Saved Work</button>
+        </p>&nbsp;<button onclick="downloadCode()">Download Code</button>
         </p>
         
         <!-- Must name main file "main" and the div tag here/css/processing code below is hardcoded to mainEditor -->
@@ -197,8 +198,6 @@ mynetid: wmongan
             }
         }
         
-        setInterval(saveCode, 10000); // save every 30 seconds
-        
         /**
           * Load code from the local browser storage, if any,
           * to continue a student's progress.
@@ -219,7 +218,33 @@ mynetid: wmongan
             for (var i in editors) {
                 localStorage.removeItem('code' + i.toString());
             }
-        }        
+            
+            // alert("Refresh the page to reset the code to the default.");
+        }   
+
+        //setInterval(saveCode, 10000); // save every N seconds
+        //loadCode(); // automatically load the code    
+
+        function downloadCode() {
+            var code = '';
+            
+            for (var i in editors) {
+                code += editors[i].getValue();
+                code += "\n\n";
+            }        
+
+            var filename = 'download.txt'
+            var blob = new Blob([code], { type: 'text/plain' });
+            var url = window.URL.createObjectURL(blob);
+            
+            var downloadLink = document.createElement("a");
+            downloadLink.href = url;
+            downloadLink.download = filename;
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+            window.URL.revokeObjectURL(url);            
+        }
 
         /**
          * Send code to the server with a POST command
