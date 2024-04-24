@@ -122,8 +122,7 @@ mynetid: wmongan
         {{ layout.submitformlinkdirections }}<br>
         {% endif %}
         
-        <button type = "button" onclick = "if(document.getElementById('studentnetid').value.length > 0) runCode(); else correctArea.innerHTML = '<h3><font color = #AA0000>Please enter your netid first!</font></h3>';" id="runbutton" disabled>▶ Run</button>&nbsp;<button onclick="saveCode()">Save Work</button>&nbsp;<button onclick="loadCode()">Load Saved Work</button>&nbsp;<button onclick="resetCode()">Clear Saved Work</button>
-        </p>&nbsp;<button onclick="downloadCode()">Download Code</button>
+        <button type = "button" onclick = "if(document.getElementById('studentnetid').value.length > 0) runCode(); else correctArea.innerHTML = '<h3><font color = #AA0000>Please enter your netid first!</font></h3>';" id="runbutton" disabled>▶ Run</button>&nbsp;<button onclick="saveCode()">Save Work</button>&nbsp;<button onclick="loadCode()">Load Saved Work</button>&nbsp;<button onclick="resetCode()">Clear Saved Work</button>&nbsp;<button onclick="downloadCode()">Download Code</button>
         </p>
         
         <!-- Must name main file "main" and the div tag here/css/processing code below is hardcoded to mainEditor -->
@@ -225,6 +224,9 @@ mynetid: wmongan
         //setInterval(saveCode, 10000); // save every N seconds
         //loadCode(); // automatically load the code    
 
+        /**
+          * Download the code locally.
+          */  
         function downloadCode() {
             var code = '';
             
