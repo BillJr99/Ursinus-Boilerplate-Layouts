@@ -78,6 +78,16 @@ mynetid: wmongan
 {% if page.language == "sql" %}
 <script src="{{site.baseurl}}/assets/js/sql.js/sql.js"></script>
 {% endif %}
+{% if page.language == "python" %}
+<script type="text/javascript" src="{{site.baseurl}}/assets/js/brython.min.js"></script>
+<script type="text/javascript" src="{{site.baseurl}}/assets/js/brython_stdlib.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Page loaded.  Initializing brython.');
+    brython(1);
+});
+</script>
+{% endif %}
 
 <div id="main" role="main">
   <div class="archive">    
@@ -202,6 +212,8 @@ mynetid: wmongan
         let correctlyAnswered = false;
         let numAttempts = 0;
 
+        var feedbackString = '';
+
         var editors = new Array();
 
         {% for file in page.files %}
@@ -271,7 +283,7 @@ mynetid: wmongan
         function saveCode() {
             for (var i in editors) {
                 var code = editors[i].getValue();
-                localStorage.setItem('code' + i.toString(), code);
+                localStorage.setItem('{{ page.title | md5 }}_code' + i.toString(), code);
             }
         }
         
@@ -281,7 +293,7 @@ mynetid: wmongan
           */ 
         function loadCode() {
             for (var i in editors) {
-                var code = localStorage.getItem('code' + i.toString());
+                var code = localStorage.getItem('{{ page.title | md5 }}_code' + i.toString());
                 if(code) {
                     editors[i].setValue(code);
                 }
@@ -293,7 +305,7 @@ mynetid: wmongan
           */         
         function resetCode() {
             for (var i in editors) {
-                localStorage.removeItem('code' + i.toString());
+                localStorage.removeItem('{{ page.title | md5 }}_code' + i.toString());
             }
             
             // alert("Refresh the page to reset the code to the default.");
@@ -406,7 +418,7 @@ mynetid: wmongan
         
         {% if page.language == "sql" %}
         async function doSql(codeString, mainString) {
-            var feedbackString = "";
+            feedbackString = "";
             let code = mainString + '\n';
             code += codeString + '\n';
             console.log(code);
@@ -615,7 +627,7 @@ mynetid: wmongan
                 feedbackString = run_python_code(student_code);
                 feedback.setValue(feedbackString);    
                 {% elsif page.language == "sql" %}
-                var feedbackString = await doSql(editorText, mainEditor.getValue()); 
+                feedbackString = await doSql(editorText, mainEditor.getValue()); 
                 console.log("Got feedback string: " + feedbackString);    
                 feedback.setValue(feedbackString);    
                 {% else %} <!-- Java -->
