@@ -142,7 +142,11 @@ mynetid: wmongan
         {% if file.ismain == true %}<div id="mainEditor">{% else %}<div id="{{ file.name }}Editor">{% endif %}{{ file.code | strip }}</div>
         {% endfor %}
         
-        <h3>Output</h3>
+        {% if page.info.language == "cpp" %}
+        <h3>Compiler Feedback</h3>
+        <div id="compilerText"></div>       
+        {% endif %}
+        <h3>Program Output</h3>
         <div id="feedbackText"></div>
 
         <canvas id="pscanvas" height="20px"></canvas>
