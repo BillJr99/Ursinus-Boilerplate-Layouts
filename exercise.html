@@ -205,7 +205,15 @@ mynetid: wmongan
         {% if file.ismain == true %}
         let mainEditor = ace.edit("mainEditor");
         mainEditor.setFontSize(16);
+        {% if page.language == "cpp" %}
+        mainEditor.session.setMode("ace/mode/c_cpp");
+        {% elsif page.language == "python" %}
+        mainEditor.session.setMode("ace/mode/python");
+        {% elsif page.language == "sql" %}
+        mainEditor.session.setMode("ace/mode/sql");
+        {% else %} <!-- Java -->
         mainEditor.session.setMode("ace/mode/java");
+        {% endif %}        
         {% if file.isreadonly == true %}
         mainEditor.setReadOnly(true);            
         {% else %}
@@ -214,7 +222,15 @@ mynetid: wmongan
         {% else %}
         let {{ file.name }}Editor = ace.edit("{{ file.name }}Editor");
         {{ file.name }}Editor.setFontSize(16);
+        {% if page.language == "cpp" %}
+        {{ file.name }}Editor.session.setMode("ace/mode/c_cpp");
+        {% elsif page.language == "python" %}
+        {{ file.name }}Editor.session.setMode("ace/mode/python");
+        {% elsif page.language == "sql" %}
+        {{ file.name }}Editor.session.setMode("ace/mode/sql");
+        {% else %} <!-- Java -->
         {{ file.name }}Editor.session.setMode("ace/mode/java");
+        {% endif %}
         {% if file.isreadonly == true %}
         {{ file.name }}Editor.setReadOnly(true);            
         {% else %}
@@ -223,6 +239,12 @@ mynetid: wmongan
         editors.push({{ file.name }}Editor);
         {% endif %}
         {% endfor %}
+        
+        {% if page.language == "cpp" %}
+        let compiler = ace.edit("compilerText");
+        compiler.setFontSize(16);
+        compiler.renderer.setShowGutter(false);
+        {% endif %}
 
         let feedback = ace.edit("feedbackText");
         feedback.setFontSize(16);
