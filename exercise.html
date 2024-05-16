@@ -55,6 +55,12 @@ mynetid: wmongan
 {% endif %}
 {% endfor %}
 
+#compilerText {
+    position: relative;
+    width: 700px;
+    height: 100px;
+}
+
 #feedbackText {
     position: relative;
     width: 700px;
@@ -588,7 +594,7 @@ mynetid: wmongan
                 {% endif %}
                 
                 checkAnswer();
-            catch(err) {
+            } catch(err) {
                 correctArea.innerHTML = "<h3><font color = red>{{ page.processor.incorrectfeedback | strip }}</font></h3>";
                 feedback.setValue("Error: " + err.message);
             }                
