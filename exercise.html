@@ -70,7 +70,7 @@ mynetid: wmongan
 
 <script src="{{site.baseurl}}/assets/js/ace.js" type="text/javascript" charset="utf-8"></script>
 <script src="{{site.baseurl}}/assets/js/modules-common.js" type="text/javascript" charset="utf-8"></script>
-{% if page.info.language == "cpp" %}
+{% if page.language == "cpp" %}
 <script src = "{{site.baseurl}}/assets/js/cpp/process-manager.js"></script>
 <script src = "{{site.baseurl}}/assets/js/cpp/runtime.js"></script>
 <script src = "{{site.baseurl}}/assets/js/cpp/wasm-tools.js"></script>
@@ -130,7 +130,7 @@ mynetid: wmongan
         {{ layout.submitformlinkdirections }}<br>
         {% endif %}
         
-        {%if page.info.language == "cpp" %}<button type = "button" onclick = "compile()" id="compilebutton">Compile</button>&nbsp;{% endif %}<button type = "button" onclick = "if(document.getElementById('studentnetid').value.length > 0) runCode(); else correctArea.innerHTML = '<h3><font color = #AA0000>Please enter your netid first!</font></h3>';" id="runbutton" disabled>▶ Run</button>&nbsp;<button onclick="saveCode()">Save Work</button>&nbsp;<button onclick="loadCode()">Load Saved Work</button>&nbsp;<button onclick="resetCode()">Clear Saved Work</button>&nbsp;<button onclick="downloadCode()">Download Code</button>
+        {%if page.language == "cpp" %}<button type = "button" onclick = "compile()" id="compilebutton">Compile</button>&nbsp;{% endif %}<button type = "button" onclick = "if(document.getElementById('studentnetid').value.length > 0) runCode(); else correctArea.innerHTML = '<h3><font color = #AA0000>Please enter your netid first!</font></h3>';" id="runbutton" disabled>▶ Run</button>&nbsp;<button onclick="saveCode()">Save Work</button>&nbsp;<button onclick="loadCode()">Load Saved Work</button>&nbsp;<button onclick="resetCode()">Clear Saved Work</button>&nbsp;<button onclick="downloadCode()">Download Code</button>
         </p>
         
         <!-- Must name main file "main" and the div tag here/css/processing code below is hardcoded to mainEditor -->
@@ -142,7 +142,7 @@ mynetid: wmongan
         {% if file.ismain == true %}<div id="mainEditor">{% else %}<div id="{{ file.name }}Editor">{% endif %}{{ file.code | strip }}</div>
         {% endfor %}
         
-        {% if page.info.language == "cpp" %}
+        {% if page.language == "cpp" %}
         <h3>Compiler Feedback</h3>
         <div id="compilerText"></div>       
         {% endif %}
@@ -152,7 +152,7 @@ mynetid: wmongan
         <canvas id="pscanvas" height="20px"></canvas>
 
 
-        {% if page.info.language == "python" %}
+        {% if page.language == "python" %}
         <!-- Python script runner -->
         <script type="text/python">
             from browser import document as doc, window
@@ -379,7 +379,7 @@ mynetid: wmongan
             {% endif %}
         }
         
-        {% if page.info.language == "sql" %}
+        {% if page.language == "sql" %}
         async function doSql(codeString, mainString) {
             var feedbackString = "";
             let code = mainString + '\n';
@@ -429,7 +429,7 @@ mynetid: wmongan
         }        
         {% endif %}
         
-        {% if page.info.language == "cpp" %}
+        {% if page.language == "cpp" %}
         let workerPath = "{{site.baseurl}}/assets/js/cpp/scripts/";
         class ProcessUI {
             constructor(name, feedbackElem) {
@@ -557,9 +557,9 @@ mynetid: wmongan
         }
         {% endif %}
 
-        {% if page.info.language == "sql" %}async {% endif %}function runCode() {
+        {% if page.language == "sql" %}async {% endif %}function runCode() {
             try {
-                {% if page.info.language == "cpp" %}
+                {% if page.language == "cpp" %}
                 runtime.timesRun = 0;
                 correctArea.innerHTML = "<font color = blue>Running...</font>";
 
@@ -583,11 +583,11 @@ mynetid: wmongan
                     editorText += editors[i].getValue();
                     editorText += "\n";
                 }
-                {% if page.info.language == "python" %}
+                {% if page.language == "python" %}
                 let student_code = editorText + mainEditor.getValue();
                 feedbackString = run_python_code(student_code);
                 feedback.setValue(feedbackString);    
-                {% elsif page.info.language == "sql" %}
+                {% elsif page.language == "sql" %}
                 var feedbackString = await doSql(editorText, mainEditor.getValue()); 
                 console.log("Got feedback string: " + feedbackString);    
                 feedback.setValue(feedbackString);    
