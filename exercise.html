@@ -588,6 +588,10 @@ mynetid: wmongan
                 {% endif %}
                 
                 checkAnswer();
+            catch(err) {
+                correctArea.innerHTML = "<h3><font color = red>{{ page.processor.incorrectfeedback | strip }}</font></h3>";
+                feedback.setValue("Error: " + err.message);
+            }                
         }
         </script>        
         
