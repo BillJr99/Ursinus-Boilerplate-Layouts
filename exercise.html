@@ -283,7 +283,7 @@ document.addEventListener('DOMContentLoaded', function() {
         function saveCode() {
             for (var i in editors) {
                 var code = editors[i].getValue();
-                localStorage.setItem('{{ page.title | md5 }}_code' + i.toString(), code);
+                localStorage.setItem('{{ page.title}}_code' + i.toString(), code);
             }
         }
         
@@ -293,7 +293,7 @@ document.addEventListener('DOMContentLoaded', function() {
           */ 
         function loadCode() {
             for (var i in editors) {
-                var code = localStorage.getItem('{{ page.title | md5 }}_code' + i.toString());
+                var code = localStorage.getItem('{{ page.title}}_code' + i.toString());
                 if(code) {
                     editors[i].setValue(code);
                 }
@@ -305,7 +305,7 @@ document.addEventListener('DOMContentLoaded', function() {
           */         
         function resetCode() {
             for (var i in editors) {
-                localStorage.removeItem('{{ page.title | md5 }}_code' + i.toString());
+                localStorage.removeItem('{{ page.title}}_code' + i.toString());
             }
             
             // alert("Refresh the page to reset the code to the default.");
