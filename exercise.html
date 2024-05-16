@@ -75,6 +75,9 @@ mynetid: wmongan
 <script src = "{{site.baseurl}}/assets/js/cpp/runtime.js"></script>
 <script src = "{{site.baseurl}}/assets/js/cpp/wasm-tools.js"></script>
 {% endif %}
+{% if page.language == "sql" %}
+<script src="{{site.baseurl}}/assets/js/sql.js/sql.js"></script>
+{% endif %}
 
 <div id="main" role="main">
   <div class="archive">    
@@ -585,6 +588,8 @@ mynetid: wmongan
                 runtime.timesRun = 0;
                 correctArea.innerHTML = "<font color = blue>Running...</font>";
 
+                let codeText = getCodeText();
+                
                 if (!(codeText === compiledCode)) {
                     compiler.setValue("Warning: It looks like you edited code since you last compiled\nBe sure to compile again before running!");
                 }
