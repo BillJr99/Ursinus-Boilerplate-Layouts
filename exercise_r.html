@@ -547,7 +547,7 @@ body {
     var webRPromise = loadWebR({
         Rargs: [],
         WEBR_URL: WEBR_LOCATION,
-        PKG_URL: "https://github.com/georgestagg/webr-ports/tree/main/dist", //"https://www.mas.ncl.ac.uk/~ngs54/webR-testing/packages/",        
+        PKG_URL: WEBR_LOCATION + "packages/", //"https://www.mas.ncl.ac.uk/~ngs54/webR/packages/", //"https://repo.r-wasm.org/", //"https://github.com/georgestagg/webr-ports/tree/main/dist", //"https://www.mas.ncl.ac.uk/~ngs54/webR-testing/packages/",        
         runtimeInitializedCB: function(){
             FSTree.init();
             term.clear();
