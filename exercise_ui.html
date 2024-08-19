@@ -1,15 +1,14 @@
 ---
 layout: default-blank
-formprocessor: "https://mathcs.ursinus.edu:8085/"
-enctype: "application/x-www-form-urlencoded"
-facultyemail: "wmongan@ursinus.edu"
 submitformlinkdirections: "Clicking Run below will check your work and, if it passes, make a page appear above that you can use to submit your work or with further instructions."
-mynetid: wmongan
+formlink: xxx
 publickey: |
     -----BEGIN RSA PUBLIC KEY-----
     MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxeJX65CXu193/ZwwG3OuFpjRkfVyf194Dq6WepK7wfRrd8lwOL6PWTw2wWdrbGRSXF7bc6KG7BG+VtjslygGEjwxDZUpDQQk1hiv3Zs/lBVAdCApQSlNqXj1CnFw6Mezcr/FdLFUSohd6xJJDeJRM8v8qdTKIV/w7W1TT5DGWRzzbFhD2ZzUinoWJSPyp88xYSmIitlYHPnB8IBsqlY6OmQDwoUNJFdxDsE3hj/8aKe9kFSbyD24JoafPuaQQvFt9SLi7wRqK2QRNw6nlX0+1trQSaWtucUGlxcLno00WGECTlqRus1sqOwvLWH2hQPqTqQUUUOIArqmjGnhKVfLlwIDAQAB
     -----END PUBLIC KEY-----
 ---
+
+<!-- publickey in global yaml or layout; canvascourseid in global or exercise page; formlink in global or layout -->
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -90,6 +89,8 @@ publickey: |
         border-bottom: 1px solid #ccc;
         style="overflow-y:scroll;"
         max-height: 50vh;
+        display: flex;
+        flex-direction: column-reverse;
     }
     .filesystem-container {
         border-right: 1px solid #ccc;
@@ -268,14 +269,14 @@ publickey: |
                     const audio = document.getElementById('audio');
                     let ace_editor = null; // set on window load
 
-                    const courseid = '{{ page.canvascourseid }}';
+                    const courseid = '{{ page.canvascourseid | default site.canvascourseid }}';
                     const asmtid = '{{ page.canvasasmtid }}';
                     const defaultuser = 'user';
                     let user = localStorage.getItem('userId') || `${defaultuser}`;
-                    const projectName = `{{page.title}}`; // ensure title is unique
+                    const projectName = `{{page.canvasasmtid}}`; 
                     let rootBasePath = `/${user}/${projectName}`;
                     let openFiles = {};
-                    const publicKey = `{{layout.publickey}}`;
+                    const publicKey = `{{ layout.publickey | default: site.publickey }}`;
                     let numAttempts = 0;
                     let correctlyAnswered = false;
                     let feedbackString = "";
@@ -548,6 +549,13 @@ publickey: |
                             }
                         };
                     }
+                    
+                    function openMultipleFiles(fileNames) {
+                        fileNames.forEach(fileName => {
+                            const fullPath = `${rootBasePath}/${fileName}`;
+                            openFile(fullPath, fileName);
+                        });
+                    }                    
 
                     async function setActiveTab(path) {
                         document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
@@ -720,7 +728,7 @@ publickey: |
                             store.put({ path: path, content: '', readOnly: false, excludeFromExport: false, ismain: false });
                             transaction.oncomplete = function() {
                                 getFilesFromDirectory(rootBasePath);
-                                openFile(path);
+                                openFile(path, fileName);
                                 logToConsole(`Created new file: ${fileName}`);
                             };
                         }
@@ -873,7 +881,7 @@ publickey: |
                         });
                     }
 
-                    async function encryptFiles(files) {
+                    async function encryptFiles(files, halfcredit) {
                         const aesKey = await window.crypto.subtle.generateKey(
                             {
                                 name: 'AES-CBC',
@@ -907,22 +915,48 @@ publickey: |
                         const rsaEncrypt = new JSEncrypt();
                         rsaEncrypt.setPublicKey(publicKey);
                         const encryptedAesKey = rsaEncrypt.encrypt(arrayBufferToBase64(exportedAesKey));
+
+                        // Encrypt the userId
                         const userId = localStorage.getItem('userId') || `${defaultuser}`;
+                        const encodedUserId = encoder.encode(userId);
+                        const encryptedUserId = await window.crypto.subtle.encrypt(
+                            {
+                                name: 'AES-CBC',
+                                iv: iv,
+                            },
+                            aesKey,
+                            encodedUserId
+                        );
 
                         if (encryptedAesKey) {
                             const encryptedPackage = {
                                 iv: arrayBufferToBase64(iv.buffer),
                                 aesKey: encryptedAesKey,
                                 files: encryptedFiles,
-                                user: userId,
+                                user: arrayBufferToBase64(encryptedUserId), 
                                 courseId: courseid,
-                                asmtId: asmtid
+                                asmtId: asmtid,
+                                halfcredit: halfcredit
                             };
 
                             return window.btoa(JSON.stringify(encryptedPackage));
                         } else {
                             throw new Error("Encryption failed.");
                         }
+                    }
+
+                    function isBase64(str) {
+                        try {
+                            return btoa(atob(str)) === str;
+                        } catch (err) {
+                            return false;
+                        }
+                    }
+
+                    // Utility function to convert ArrayBuffer to Base64 string
+                    function arrayBufferToBase64(buffer) {
+                        const binary = String.fromCharCode.apply(null, new Uint8Array(buffer));
+                        return window.btoa(binary);
                     }
 
                     function arrayBufferToBase64(buffer) {
@@ -1035,6 +1069,12 @@ publickey: |
                         } else {
                             getFilesFromDirectory(rootBasePath);
                         }
+                        
+                        {% if page.openFilesOnLoad %}
+                        // open initial files, if available
+                        var filesToOpen = {{ page.openFilesOnLoad | jsonify }};
+                        openMultipleFiles(filesToOpen);
+                        {% endif %}
                     });
 
                     async function clearDBPath(path) {
@@ -1398,16 +1438,16 @@ publickey: |
                     }
                     
                     async function postCode(halfcredit) {
-                        code = await getCodeText();
-                        code += '\n\n';
-                        code += await getMainCodeText();
-                        
-                        // TODO submit code!
-                        
                         // download encrypted submission version
                         const allFiles = await getAllFilesRecursively(rootBasePath);
                         const filteredFiles = allFiles.filter(file => !(file.excludeFromExport));
-                        const encryptedContent = await encryptFiles(filteredFiles);
+                        const encryptedContent = await encryptFiles(filteredFiles, halfcredit);
+
+                        let url = `{{layout.formlink | default site.formlink}}` + encryptedContent;
+                        console.log("len(url)", url.length);
+                        window.open(url);
+                        
+                        // download encrypted submission version, if desired
                         const userId = localStorage.getItem('userId') || `${defaultuser}`;
                         const blob = new Blob([encryptedContent], { type: 'text/plain' });
                         const a = document.createElement('a');
