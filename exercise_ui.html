@@ -1,11 +1,6 @@
 ---
 layout: default-blank
 submitformlinkdirections: "Clicking Run below will check your work and, if it passes, make a page appear above that you can use to submit your work or with further instructions."
-formlink: xxx
-publickey: |
-    -----BEGIN RSA PUBLIC KEY-----
-    MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxeJX65CXu193/ZwwG3OuFpjRkfVyf194Dq6WepK7wfRrd8lwOL6PWTw2wWdrbGRSXF7bc6KG7BG+VtjslygGEjwxDZUpDQQk1hiv3Zs/lBVAdCApQSlNqXj1CnFw6Mezcr/FdLFUSohd6xJJDeJRM8v8qdTKIV/w7W1TT5DGWRzzbFhD2ZzUinoWJSPyp88xYSmIitlYHPnB8IBsqlY6OmQDwoUNJFdxDsE3hj/8aKe9kFSbyD24JoafPuaQQvFt9SLi7wRqK2QRNw6nlX0+1trQSaWtucUGlxcLno00WGECTlqRus1sqOwvLWH2hQPqTqQUUUOIArqmjGnhKVfLlwIDAQAB
-    -----END PUBLIC KEY-----
 ---
 
 <!-- publickey in global yaml or layout; canvascourseid in global or exercise page; formlink in global or layout -->
@@ -269,14 +264,14 @@ publickey: |
                     const audio = document.getElementById('audio');
                     let ace_editor = null; // set on window load
 
-                    const courseid = '{{ page.canvascourseid | default site.canvascourseid }}';
+                    const courseid = '{% if page.canvascourseid %}{{ page.canvascourseid }}{% else %}{{ site.canvascourseid }}{% endif %}';
                     const asmtid = '{{ page.canvasasmtid }}';
                     const defaultuser = 'user';
                     let user = localStorage.getItem('userId') || `${defaultuser}`;
                     const projectName = `{{page.canvasasmtid}}`; 
                     let rootBasePath = `/${user}/${projectName}`;
                     let openFiles = {};
-                    const publicKey = `{{ layout.publickey | default: site.publickey }}`;
+                    const publicKey = `{% if layout.publickey %}{{ layout.publickey }}{% else %}{{ site.publickey }}{% endif %}`;
                     let numAttempts = 0;
                     let correctlyAnswered = false;
                     let feedbackString = "";
@@ -1443,7 +1438,7 @@ publickey: |
                         const filteredFiles = allFiles.filter(file => !(file.excludeFromExport));
                         const encryptedContent = await encryptFiles(filteredFiles, halfcredit);
 
-                        let url = `{{layout.formlink | default site.formlink}}` + encryptedContent;
+                        let url = `{% if layout.formlink %}{{ layout.formlink }}{% else %}{{ site.formlink }}{% endif %}` + encryptedContent;
                         console.log("len(url)", url.length);
                         window.open(url);
                         
