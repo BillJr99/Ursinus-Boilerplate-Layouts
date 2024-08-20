@@ -3,15 +3,10 @@ layout: default-standard
 
 directions: Please answer the questions provided.
 
-submission: Submit your answers via the form on this page.
+submission: Print your responses and submit them as directed.
 
 googlerecaptchakey: 6Le01roZAAAAABgEjsfg7AJ0rtq3J172O7FXTS8s
 
-formprocessor: "https://mathcs.ursinus.edu:8083/"
-enctype: "application/x-www-form-urlencoded"
-facultyemail: "wmongan@ursinus.edu"
-
-formprocessordirections: "<strong>You must be connected to the VPN for submission to be successful!  You will receive a copy of your code via e-mail, so you'll know that it was submitted if you receive that e-mail!</strong>"
 ---
 
 <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
@@ -32,12 +27,6 @@ formprocessordirections: "<strong>You must be connected to the VPN for submissio
 <!--reCAPTCHA-->
 <script src="https://www.google.com/recaptcha/api.js"></script>
 <!--reCAPTCHA-->
-
- <script>
-   function enableSubmit() {
-    document.getElementById("submitbutton").disabled = false;
-   }
- </script>
  
 <div id="main" role="main">
   <div class="archive">
@@ -52,9 +41,6 @@ formprocessordirections: "<strong>You must be connected to the VPN for submissio
     
     <!-- Include page.title for reference -->
     <input type="hidden" name="title" value="{{ page.title }}">
-
-    <!-- Magic Word: formprocessor only sends if this is present -->
-    <input type="hidden" name="magic" value="ursinus">
     
     <div style="width: 100%; display: table; border-collapse:separate; border-spacing:5px;">
             <div style="width: 100%; display: table-row; background-color: black; color: white;">
@@ -82,8 +68,6 @@ formprocessordirections: "<strong>You must be connected to the VPN for submissio
             
             {% endfor %}            
             
-            <!-- facultyemail and studentnetid fields are required to send mail on the form processor -->
-            <input type="hidden" name="facultyemail" value="{{ layout.facultyemail | strip }}">
             <input type="hidden" name="studentemail-q" value="What is your e-mail address?">
             
             <div style="width: 100%; display: table-row;">
@@ -109,7 +93,6 @@ formprocessordirections: "<strong>You must be connected to the VPN for submissio
     
     <br>
     {{ layout.formprocessordirections }}<br><br>
-    <input type="submit" value="Submit" id="submitbutton" disabled="disabled">
 
     </form>
     
