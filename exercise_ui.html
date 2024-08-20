@@ -192,7 +192,7 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                     <div class="editor-container" id="editor-container">
                     </div>
                     <div class="output-container" id="output-container">
-                        <pre id="console">Console Output...</pre>
+                        <pre id="console"></pre>
                     </div>
                 </div>
                 <div class="right-container">
@@ -285,17 +285,14 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                         {% endfor %}            
                     ];
                     
-                    function scrollConsoleToBottom() {
-                        setTimeout(() => {
-                            outputContainer.scrollTop = outputContainer.scrollHeight;
-                        }, 0);                    
+                    function logToConsole(message) {
+                        const newLine = document.createElement('div');
+                        newLine.textContent = message + '\n';
+                        consoleOutput.appendChild(newLine);
+                        newLine.scrollIntoView({ behavior: "smooth" });
                     }
                     
-                    function logToConsole(message) {
-                        consoleOutput.textContent += message + '\n';
-                        
-                        scrollConsoleToBottom();
-                    }
+                    logToConsole("Console output...");
                                         
                     const PROCESSING_CODE_BEGIN = `
                     var feedbackString = \"\";
@@ -630,9 +627,7 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
                     }
                     
                     clearButton.addEventListener('click', () => {
-                        consoleOutput.textContent = '';
-                        
-                        scrollConsoleToBottom();
+                        consoleOutput.innerHTML = '';
                     });                    
 
                     loginBtn.addEventListener('click', async () => {
