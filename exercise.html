@@ -9,6 +9,7 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <link rel="stylesheet" href="{{site.baseurl}}/assets/css/jstree/style.min.css" />
+
 <style>
     body {
         display: flex;
@@ -17,6 +18,7 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
         margin: 0;
         font-family: Arial, sans-serif;
     }
+
     header {
         display: flex;
         justify-content: space-between;
@@ -24,14 +26,17 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
         background: #f4f4f4;
         border-bottom: 1px solid #ccc;
     }
+
     .left-header {
         display: flex;
         align-items: center;
     }
+
     .tabs {
         display: flex;
         margin-left: 20px;
     }
+
     .tab {
         display: flex;
         align-items: center;
@@ -41,63 +46,77 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
         border: 1px solid #ccc;
         cursor: pointer;
     }
+
     .tab.active {
         background: #fff;
         border-bottom: none;
     }
+
     .tab .close {
         margin-left: 10px;
         color: red;
         cursor: pointer;
     }
+
     .actions {
         display: flex;
         align-items: center;
     }
+
     .actions button {
         margin-left: 5px;
         padding: 10px;
     }
+
     main {
         display: flex;
         flex-grow: 1;
         height: 85vh;
     }
+
     .left-container, .right-container {
         display: flex;
         flex-direction: column;
-        width: 50%;
-        height: 100%;
-    }
-    .editor-container, .output-container, .filesystem-container, .canvas-container {
-        flex: 1;
-        padding: 10px;
-        box-sizing: border-box;
-        height: 100%;
-        min-height: 50%;
-    }
+        width: 100%;
+    }    
+
     .editor-container {
         border-right: 1px solid #ccc;
         border-bottom: 1px solid #ccc;
+        height: 75%; 
+        flex: none; 
     }
+
     .output-container {
         border-bottom: 1px solid #ccc;
-        max-height: 50vh;
-        overflow-y: auto;
+        overflow-y: hidden;
+        overflow-x: hidden;
         display: flex;
         flex-direction: column;
+        height: 25%; 
+        flex: none; 
     }
+
+    .canvas-container {
+        height: 75%; 
+        flex: none; 
+    }
+
     .filesystem-container {
         border-right: 1px solid #ccc;
         display: flex;
         flex-direction: column;
         align-items: flex-start;
+        height: 25%;
+        flex: none; 
     }
+
     textarea, pre, canvas, audio {
         width: 100%;
         height: 100%;
         box-sizing: border-box;
     }
+
     #filesystem {
         height: 100%;
         overflow-y: auto;
@@ -105,12 +124,21 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
         border: 1px solid #ccc;
         width: 100%;
     }
+
     body .ace_scrollbar-v {
         overflow-y: auto;
     }
 
     body .ace_scrollbar-h {
         overflow-x: auto;
+    }
+
+    pre {
+        white-space: pre; 
+        overflow-x: auto; 
+        overflow-y: auto; 
+        max-height: 100%; 
+        margin: 0; 
     }
 </style>
 
@@ -158,7 +186,7 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
 <script src="{{site.baseurl}}/assets/js/ggslac/viewers/scenecanvas.js"></script>
 <script src="{{site.baseurl}}/assets/js/ggslac/viewers/matrixanim.js"></script>
 {% endif %}
-    
+
 <div id="main" role="main">
   <div class="archive"> 
     <h1 class="page__title">{{ page.title }}{% if page.info.points %} ({{page.info.points}} Points){% endif %}</h1>
@@ -217,9 +245,11 @@ For example, Professor Tralie's ID is ctralie.
 If you are not an Ursinus student, that's fine!
 Just make something up, and you can still run everything</div>
                     <button id="clear-console">Clear Console</button>
-                    <div class="output-container" id="output-container">
-                        
-                        <pre id="console"></pre>
+                    <div class="output-container" id="output-container"> 
+                    <label for="wrap-text">Wrap Text</label>
+                    <input type="checkbox" id="wrap-text">
+                    <br />
+                    <pre id="console" style="white-space: pre; overflow-x: auto;"></pre>
                     </div>
                 </div>
                 <div class="right-container">
@@ -335,8 +365,9 @@ def pyodide_print(s):
                     const tabs = document.querySelector('.tabs');
                     const imageArea = document.getElementById('imageArea');
                     const audioArea = document.getElementById('audioArea');
+                    const canvas = document.getElementById('GLCanvas1');
                     let ace_editor = null; // set on window load
-
+                    
                     const courseid = '{% if page.canvascourseid %}{{ page.canvascourseid }}{% else %}{{ site.canvascourseid }}{% endif %}';
                     const asmtid = '{{ page.canvasasmtid }}';
                     const defaultuser = 'user';
@@ -714,6 +745,17 @@ def pyodide_print(s):
                             }
                         };
                     }
+                    
+                    document.getElementById('wrap-text').addEventListener('change', function() {
+                        const consoleOutput = document.getElementById('console');
+                        if (this.checked) {
+                            consoleOutput.style.whiteSpace = 'pre-wrap'; 
+                            consoleOutput.style.overflowX = 'hidden'; 
+                        } else {
+                            consoleOutput.style.whiteSpace = 'pre'; 
+                            consoleOutput.style.overflowX = 'auto'; 
+                        }
+                    });                    
                     
                     clearButton.addEventListener('click', () => {
                         consoleOutput.innerHTML = '';
@@ -1916,7 +1958,7 @@ def pyodide_print(s):
 
                         let url = `{% if layout.formlink %}{{ layout.formlink }}{% else %}{{ site.formlink }}{% endif %}` + encryptedContent;
                         console.log("len(url)", url.length);
-                        window.open(url);
+                        window.location.href = url; // window.open(url);                     
                         
                         // download encrypted submission version, if desired
                         if(downloadblob) {
