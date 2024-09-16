@@ -175,6 +175,10 @@ submitformlinkdirections: "Clicking Run below will check your work and, if it pa
     }    
 </style>
 
+{% if page.language == "scheme" %}
+<!-- load biwascheme first so it is overridden by jquery and jstree loads later -->
+<script src="{{site.baseurl}}/assets/js/biwascheme.js"></script>
+{% endif %}
 <script src="{{site.baseurl}}/assets/js/jsencrypt.min.js"></script>
 <script src="{{site.baseurl}}/assets/js/jszip.min.js"></script>
 <script src="{{site.baseurl}}/assets/js/jquery.min.js"></script>
@@ -558,6 +562,8 @@ def pyodide_print(s):
                     }
 
                     async function getFilesFromDirectory(directory) {
+                        await waitForElement('#filesystem');
+                        
                         const db = await initDB();
                         if (!db) {
                             console.error('Failed to initialize DB');
@@ -605,12 +611,12 @@ def pyodide_print(s):
                                     type: 'folder'
                                 });
                             });
-
+                            
                             $('#filesystem').jstree(true).settings.core.data = treeData;
                             $('#filesystem').jstree(true).refresh();
                         };
                     }
-
+                    
                     // Append rootBasePath when a file is clicked
                     $('#filesystem').on('select_node.jstree', function (e, data) {
                         const node = data.node;
@@ -641,11 +647,14 @@ def pyodide_print(s):
                                 ace_editor.session.setMode("ace/mode/python");
                                 {% elsif page.language == "sql" %}
                                 ace_editor.session.setMode("ace/mode/sql");
+                                {% elsif page.language == "scheme" %}
+                                ace_editor.session.setMode("ace/mode/scheme");
                                 {% elsif page.language == "java" %}
                                 ace_editor.session.setMode("ace/mode/java");
                                 {% elsif page.language == "javascript" or page.language == "graphics_view" or page.language == "graphics_shader" %}
                                 ace_editor.session.setMode("ace/mode/javascript");
                                 {% endif %}  
+                                
                                 // Override based on file extension
                                 if (path.match(/\.(cpp)$/)) {
                                     ace_editor.session.setMode("ace/mode/c_cpp");
@@ -1218,6 +1227,10 @@ def pyodide_print(s):
                         audioArea.innerHTML = html;
                     }
                     
+                    function sleep(ms) {
+                        return new Promise(resolve => setTimeout(resolve, ms));
+                    }                    
+                    
                     function waitForElement(selector, timeout = 3000) {
                         return new Promise((resolve, reject) => {
                             const interval = 100; // Check every 100ms
@@ -1415,9 +1428,7 @@ def pyodide_print(s):
                     compileButton.onclick = saveAndCompile;
                     compileButton.innerText = 'Save Open Files and Compile';
                     document.querySelector('.actions').appendChild(compileButton);
-                    {% endif %}
 
-                    {% if page.language == "cpp" %}
                     let workerPath = "{{site.baseurl}}/assets/js/cpp/scripts/";
                     class ProcessUI {
                         constructor(name) {
@@ -1536,6 +1547,42 @@ def pyodide_print(s):
                         });
                     }
                     {% endif %}
+                    
+
+                    {% if page.language == "scheme" %}
+                    async function doScheme(codeString, mainString) {
+                        feedbackString = "";
+                        let code = codeString + '\n';
+                        code += mainString + '\n'; // main should go last in scheme
+                        console.log(code);
+
+                        // https://github.com/sipavlovic/scheme_experiment/blob/master/scheme.html
+                        onSchemeError = function(e) { 
+                            logToConsole(e.message);
+                        }
+                        onSchemeResult = function(result) {
+                            if (result == BiwaScheme.undef || result == null || result == undefined) {
+                                feedbackString += "nil" + "\n";
+                                logToConsole("nil");   
+                            } else {
+                                if (typeof result == "string") {
+                                    feedbackString += result + "\n";
+                                    logToConsole(result);
+                                } else {
+                                    feedbackString += JSON.stringify(result) + "\n";
+                                    logToConsole(JSON.stringify(result));
+                                }                                
+                            }
+                        }
+                        biwa = new BiwaScheme.Interpreter(onSchemeError);
+                        return biwa.evaluate(code,onSchemeResult);
+
+                        return feedbackString;
+                    }        
+                    {% endif %}                    
+                    
+                    
+                    
 
                     {% if page.language == "sql" %}
                     async function doSql(codeString, mainString) {
@@ -1579,6 +1626,8 @@ def pyodide_print(s):
                         return feedbackString;
                     }        
                     {% endif %}
+                    
+                    
 
                     {% if page.language == "pyodide" %}
                         // Load the required packages
@@ -1923,6 +1972,10 @@ def pyodide_print(s):
                             canvasStr = glcanvas.toDataURL();
                             //////////////////////////////////////////////////////////////////
 
+
+                            {% elsif page.language == "scheme" %}
+                            feedbackString = await doScheme(editorText, mainText); 
+                            logToConsole(feedbackString);                              
 
 
                             {% elsif page.language == "sql" %}
