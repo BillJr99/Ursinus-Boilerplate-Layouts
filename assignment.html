@@ -11,6 +11,11 @@ styleguide: "https://www.billmongan.com/Ursinus-CS173/Style-Guide"
   <div class="archive">
     <h1 class="page__title">{{ page.title }}{% if page.info.points %} ({{page.info.points}} Points){% endif %}</h1>
 
+    {% if page.info.purpose %}
+    <h1>Purpose</h1>
+    {{ page.info.purpose }}
+    {% endif %}
+    
     {% if page.info.goals %}
     <h1>Assignment Goals</h1>
     The goals of this assignment are:
@@ -20,6 +25,26 @@ styleguide: "https://www.billmongan.com/Ursinus-CS173/Style-Guide"
     {% endfor %}
     </ol>
     {% endif %}
+    
+    {% if page.info.concepts %}
+    <h1>Concepts</h1>
+    The key concepts to be developed include:
+    <ol>
+    {% for concept in page.info.concepts %}
+    <li>{{concept}}</li>
+    {% endfor %}
+    </ol>
+    {% endif %}    
+    
+    {% if page.info.tasks %}
+    <h1>Tasks</h1>
+    Your tasks in this assignment are to:
+    <ol>
+    {% for task in page.info.tasks %}
+    <li>{{task}}</li>
+    {% endfor %}
+    </ol>
+    {% endif %}     
     
     {% if page.info.readings %}
     <h1>Background Reading and References</h1>
