@@ -5,7 +5,7 @@ directions: "Consider the activity models and answer the questions provided.  Fi
 
 submission: "I encourage you to submit your answers to the questions (and ask your own questions!) using the Class Activity Questions discussion board.  You may also respond to questions or comments made by others, or ask follow-up questions there.  Answer any reflective prompt questions in the Reflective Journal section of your OneNote Classroom personal section.  You can find the link to the class notebook on the syllabus."
 
-embed_directions_replit: "You can try out some code examples in this embedded development environment!  To share this with someone else, first have one member of your group make a small change to the file, then click \"Open in Repl.it\".  Log into your <a href=\"https://repl.it/\">Repl.it</a> account (or create one if needed), and click the \"Share\" button at the top right.  Note that some embedded Repl.it projects have multiple source files; you can see those by clicking the file icon on the left navigation bar of the embedded code frame.  Share the link that opens up with your group members.  Remember only to do this for partner/group activities!"
+embed_directions_code: "You can try out these code examples in a development environment of your choice!  Note that some embedded projects have multiple source files; you can see those by clicking the appropriate file tab to open that file."
 
 embed_directions_video: "You can play the following video right here from your browser!"
 
@@ -122,9 +122,9 @@ embed_directions_video: "You can play the following video right here from your b
         {% endif %}
         
         {% if model.embed %}
-        {% if model.embed contains "repl.it" or model.embed contains "replit" %}
+        {% if model.embed contains "repl.it" or model.embed contains "replit" or model.embed contains "code-viewer.html" %}
         <h3>Embedded Code Environment</h3>
-        {{ layout.embed_directions_replit }}
+        {{ layout.embed_directions_code }}
         <br>
         {% elsif model.embed contains "youtube" %}
         <h3>Embedded Video</h3>
