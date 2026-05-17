@@ -2130,10 +2130,22 @@ del _webide_compiled, _webide_student_source
         const projectName = `{{page.canvasasmtid}}`;
         let rootBasePath = `/${user}/${projectName}`;
         let openFiles = {};
+        // Expose for tests / extensions (parallels window.ace_editor).
+        // The let-binding is the source of truth; this is a Proxy mirror
+        // so window-side reads/writes affect the same object.
+        try { Object.defineProperty(window, 'openFiles', { get: () => openFiles, set: v => { openFiles = v; }, configurable: true }); } catch (e) {}
         const publicKey = `{% if layout.publickey %}{{ layout.publickey }}{% else %}{{ site.publickey }}{% endif %}`;
         let numAttempts = 0;
         let correctlyAnswered = false;
+        // Expose for tests / extensions (parallels window.openFiles).
+        try {
+            Object.defineProperty(window, 'numAttempts', { get: () => numAttempts, set: v => { numAttempts = v; }, configurable: true });
+            Object.defineProperty(window, 'correctlyAnswered', { get: () => correctlyAnswered, set: v => { correctlyAnswered = v; }, configurable: true });
+        } catch (e) {}
         let feedbackString = "";
+        try {
+            Object.defineProperty(window, 'feedbackString', { get: () => feedbackString, set: v => { feedbackString = v; }, configurable: true });
+        } catch (e) {}
 
         const initialFiles = [
             {% for file in page.files %}
@@ -2568,6 +2580,9 @@ del _webide_compiled, _webide_student_source
             fileNames.forEach(fileName => openFile(`${rootBasePath}/${fileName}`, fileName));
         }
 
+        // Exposed for tests / extensions.
+        window.setActiveTab = setActiveTab;
+        window.saveActiveTabs = () => saveActiveTabs();
         async function setActiveTab(path) {
             // ARIA tab pattern: roving tabindex + aria-selected
             document.querySelectorAll('.tab').forEach(t => {
@@ -5448,11 +5463,28 @@ del _webide_compiled, _webide_student_source
                 '#ifndef _STDIO_H\n' +
                 '#define _STDIO_H\n' +
                 '#endif\n' +
+                // NULL must be assignable to typed pointers in C++; (void*)0
+                // is C-only. Use compiler-builtin null sentinel in C++.
                 '#ifndef NULL\n' +
+                '#ifdef __cplusplus\n' +
+                '#define NULL 0\n' +
+                '#else\n' +
                 '#define NULL ((void*)0)\n' +
                 '#endif\n' +
-                'typedef unsigned long size_t;\n' +
+                '#endif\n' +
+                // size_t is wasm32 = unsigned int (NOT unsigned long); use
+                // compiler-builtin __SIZE_TYPE__ which is always correct.
+                // Also guard so musl/libcxx headers don\'t redefine it.
+                '#ifndef _SIZE_T_DECLARED\n' +
+                '#define _SIZE_T_DECLARED\n' +
+                'typedef __SIZE_TYPE__ size_t;\n' +
+                '#endif\n' +
+                // EOF — libcxx <string> uses it in char_traits::eof().
+                '#ifndef EOF\n' +
+                '#define EOF (-1)\n' +
+                '#endif\n' +
                 'typedef struct _IO_FILE FILE;\n' +
+                'typedef long fpos_t;\n' +
                 'extern FILE *stdin, *stdout, *stderr;\n' +
                 '#ifdef __cplusplus\n' +
                 'extern "C" {\n' +
@@ -5474,6 +5506,37 @@ del _webide_compiled, _webide_student_source
                 'size_t fwrite(const void *, size_t, size_t, FILE *);\n' +
                 'int feof(FILE *);\n' +
                 'char *fgets(char *, int, FILE *);\n' +
+                // Extras that libcxx <cstdio> imports via `using ::tmpnam`
+                // etc. Declarations only — linking still uses the runtime\'s
+                // real implementations.
+                'char *tmpnam(char *);\n' +
+                'int vprintf(const char *, void *);\n' +
+                'int vfprintf(FILE *, const char *, void *);\n' +
+                'int vsprintf(char *, const char *, void *);\n' +
+                'int vsnprintf(char *, size_t, const char *, void *);\n' +
+                'int vscanf(const char *, void *);\n' +
+                'int vfscanf(FILE *, const char *, void *);\n' +
+                'int vsscanf(const char *, const char *, void *);\n' +
+                'int remove(const char *);\n' +
+                'int rename(const char *, const char *);\n' +
+                'int ferror(FILE *);\n' +
+                'void clearerr(FILE *);\n' +
+                'long ftell(FILE *);\n' +
+                'int fseek(FILE *, long, int);\n' +
+                'void rewind(FILE *);\n' +
+                'void perror(const char *);\n' +
+                'int ungetc(int, FILE *);\n' +
+                'int fgetc(FILE *);\n' +
+                'int fputc(int, FILE *);\n' +
+                'int fputs(const char *, FILE *);\n' +
+                'FILE *tmpfile(void);\n' +
+                'void setbuf(FILE *, char *);\n' +
+                'int setvbuf(FILE *, char *, int, size_t);\n' +
+                'int fgetpos(FILE *, void *);\n' +
+                'int fsetpos(FILE *, const void *);\n' +
+                'int putc(int, FILE *);\n' +
+                'int getc(FILE *);\n' +
+                'FILE *freopen(const char *, const char *, FILE *);\n' +
                 '#ifdef __cplusplus\n' +
                 '}\n' +
                 '#endif\n' +
@@ -6372,6 +6435,8 @@ del _webide_compiled, _webide_student_source
         }
         window.runAllTests = runAllTests;
 
+        // Exposed for tests/extensions that want to re-trigger after async runtimes settle.
+        window.checkAnswer = () => checkAnswer();
         async function checkAnswer() {
             console.log("Got feedback string: " + feedbackString);
             const points = {% if page.info.points %}{{page.info.points}}{% else %}0{% endif %};
