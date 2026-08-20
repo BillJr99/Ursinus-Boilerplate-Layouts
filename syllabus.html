@@ -637,12 +637,17 @@ boilerplate:
 
     <td align="left">
     <!-- Assumes week numbers are counted from 0 in the markdown definition to facilitate date calculation, and that the start date is a Monday -->
+    {% if item.week %}
     {% assign week_num = item.week | to_integer %}
     <strong>Week {{ week_num | plus: 1 }}</strong>
+    {% endif %}
     </td>
 
     <td align="left">
-    {% if item.reschedule %}
+    {% if item.cdate %}
+    <!-- cdate pins this entry to a specific calendar date, off the meeting grid -->
+    <strong><script language="JavaScript">document.write(getDateString(strtodate("{{item.cdate}}")));</script></strong>
+    {% elsif item.reschedule %}
     <strong><span style="color: red;">{{item.reschedule}} (Rescheduled)</span></strong>
     {% else %}
     <strong><script language="JavaScript">document.write(getCourseDate("{{page.info.course_start_date}}", "{{item.week}}", "{{item.date}}", {{page.info.class_meets_days.isM}}, {{page.info.class_meets_days.isT}}, {{page.info.class_meets_days.isW}}, {{page.info.class_meets_days.isR}}, {{page.info.class_meets_days.isF}}, {{page.info.class_meets_days.isS}}, {{page.info.class_meets_days.isU}}));</script></strong>
