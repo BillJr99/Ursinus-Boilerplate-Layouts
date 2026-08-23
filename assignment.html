@@ -67,7 +67,7 @@ styleguide: "https://www.billmongan.com/Ursinus-CS173/Style-Guide"
     {% for reading in page.info.readings %}
     <li>
     {% if reading.rlink %}
-    <a href="{{reading.rlink}}" target="_blank">
+    <a href="{% if reading.liapage %}{{ site.lia_viewer_url }}{{ site.raw_pages_url }}{% endif %}{{reading.rlink}}" target="_blank">
     {% endif %}
     {{reading.rtitle}}
     {% if reading.rlink %}
