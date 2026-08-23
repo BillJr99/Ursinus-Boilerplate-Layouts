@@ -567,7 +567,7 @@ boilerplate:
     <td align="left">
     {% if item.title or item.image %}
       {% if item.link %}
-        <a href="{{ item.link }}" target="_blank">
+        <a href="{% if item.liapage %}{{ site.lia_viewer_url }}{{ site.raw_pages_url }}{% endif %}{{ item.link }}" target="_blank">
       {% endif %}
       
       {% if item.image %}
@@ -656,7 +656,7 @@ boilerplate:
 
     <td align="left">
     {% if item.title %}
-    {% if item.link %}<a href="{{item.link}}" target="_blank">{% endif %}
+    {% if item.link %}<a href="{% if item.liapage %}{{ site.lia_viewer_url }}{{ site.raw_pages_url }}{% endif %}{{item.link}}" target="_blank">{% endif %}
     {{ item.title }}
     {% if item.link %}</a>{% endif %}
     {% endif %}
@@ -670,7 +670,7 @@ boilerplate:
     {% for reading in item.readings %}
     <li>
     {% if reading.rlink %}
-    <a href="{{reading.rlink}}" target="_blank">
+    <a href="{% if reading.liapage %}{{ site.lia_viewer_url }}{{ site.raw_pages_url }}{% endif %}{{reading.rlink}}" target="_blank">
     {% endif %}
     {{reading.rtitle}}
     {% if reading.rlink %}
@@ -695,7 +695,7 @@ boilerplate:
     <span>
     
     {% if deliverable.dlink %}
-    <a href="{{deliverable.dlink}}" target="_blank">
+    <a href="{% if deliverable.liapage %}{{ site.lia_viewer_url }}{{ site.raw_pages_url }}{% endif %}{{deliverable.dlink}}" target="_blank">
     {% endif %}
     {{deliverable.dtitle}}
     {% if deliverable.dlink %}
@@ -723,7 +723,7 @@ boilerplate:
     <span style="font-weight: bold">
     
     {% if deliverable.dlink %}
-    <a href="{{deliverable.dlink}}" target="_blank">
+    <a href="{% if deliverable.liapage %}{{ site.lia_viewer_url }}{{ site.raw_pages_url }}{% endif %}{{deliverable.dlink}}" target="_blank">
     {% endif %}
     {{deliverable.dtitle}}
     {% if deliverable.dlink %}
