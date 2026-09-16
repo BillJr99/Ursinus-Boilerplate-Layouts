@@ -352,13 +352,18 @@ h2:hover .tb-anchor, h3:hover .tb-anchor, .tb-anchor:focus { opacity: 1; }
 .tb-flow pre { padding: 15px 17px; overflow-x: auto; line-height: 1.55; }
 .tb-flow .highlight pre { border: 0; box-shadow: none; border-radius: 0; margin: 0; }
 .tb-flow pre, .tb-flow code { font-family: 'Consolas', 'Menlo', 'Courier New', monospace; font-size: .875em; }
-.tb-flow p > code, .tb-flow li > code {
+.tb-flow p > code, .tb-flow li > code, .tb-flow td > code, .tb-flow th > code {
   background: #e9eaec;
   box-shadow: none;
   padding: .12em .38em;
   border-radius: 3px;
   color: #333;
 }
+/* An inline code span holding a long path, URL or call signature cannot wrap at a
+   space, so on a phone it would push the whole page sideways.  Code inside <pre>
+   is excluded: those scroll within their own block instead. */
+.tb-flow :not(pre) > code { overflow-wrap: anywhere; }
+.tb-flow p, .tb-flow li, .tb-flow td, .tb-flow th, .tb-flow dd { overflow-wrap: break-word; }
 .tb-pre { position: relative; }
 .tb-copy {
   position: absolute; top: 8px; right: 8px;
@@ -420,7 +425,18 @@ h2:hover .tb-anchor, h3:hover .tb-anchor, .tb-anchor:focus { opacity: 1; }
 /* ===========================================================================
    Tables.  Slate's default is a heavy #373737 grid; soften it for prose.
    =========================================================================== */
-.tb-flow table { border: 1px solid var(--tb-rule-strong); width: 100%; background: var(--tb-surface); margin: 1.9em 0; }
+/* A table whose content cannot wrap (long paths, code spans) would otherwise push
+   past the column and, on a phone, scroll the whole page sideways.  Letting the
+   table scroll within its own box keeps the page itself fixed. */
+.tb-flow table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--tb-rule-strong);
+  background: var(--tb-surface);
+  margin: 1.9em 0;
+}
 .tb-flow th { background: #e4e6e8; color: var(--tb-ink-strong); border: 1px solid var(--tb-rule-strong); padding: 9px 12px; text-align: left; font-weight: 600; font-size: .92em; }
 .tb-flow td { border: 1px solid var(--tb-rule); padding: 9px 12px; font-size: .94em; }
 .tb-flow tbody tr:nth-child(even) { background: #fafafa; }

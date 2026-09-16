@@ -58,8 +58,9 @@ def factorial(n):
 ```
 
 The base case is what makes the whole thing terminate.<span class="tb-sn">Some functions need more
-than one base case. A Fibonacci function needs two, because it recurses twice.</span> The recursive
-case is what makes progress toward it.
+than one base case. Fibonacci needs two, at `n = 0` and `n = 1`, because its recursive case reaches
+back two steps: with only `n == 1` defined, `fib(n - 2)` would step straight past it.</span> The
+recursive case is what makes progress toward it.
 
 > Do not ask "how does the whole recursion work?" Ask only two questions. Does the base case return
 > the right answer? And *if* the recursive call returns the right answer for a smaller input, does
