@@ -682,8 +682,12 @@ h2:hover .tb-anchor, h3:hover .tb-anchor, .tb-anchor:focus { opacity: 1; }
 
       <h1 class="page__title">{{ page.title }}</h1>
 
+      {% comment %} Fall back to the existing info.purpose convention so a page that
+      already declares a purpose does not have to repeat it as a subtitle. {% endcomment %}
       {% if page.info.subtitle %}
       <p class="tb-opener__sub">{{ page.info.subtitle }}</p>
+      {% elsif page.info.purpose %}
+      <p class="tb-opener__sub">{{ page.info.purpose }}</p>
       {% endif %}
 
       {% if page.info.time or page.info.level or page.info.prereqs %}
