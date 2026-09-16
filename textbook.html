@@ -842,6 +842,64 @@ h2:hover .tb-anchor, h3:hover .tb-anchor, .tb-anchor:focus { opacity: 1; }
     if (node) { node.nodeValue = node.nodeValue.replace(/^\s*\[![A-Za-z]+\]\s*/, ""); }
   });
 
+  // -- 1b. Labelled blockquotes ----------------------------------------------
+  // Assignment pages have long opened an inset with a bold label: `> **Do this.**`,
+  // `> **If it fails.**`, `> **Checkpoint.**`.  That label is exactly a box title,
+  // so promote it rather than asking every page to be rewritten with an attribute
+  // list.  Promotion is ALLOWLIST-ONLY, deliberately: an unrecognised lead-in stays
+  // a plain blockquote.  A general rule would also catch a lead-in that is a prose
+  // sentence rather than a label -- the chapter pages have 21 of those -- and set
+  // a paragraph of text in a small-caps title bar.  For the same reason the list
+  // holds only labels that END a clause (`Do this.`, `In this part:`); a fragment
+  // that runs on grammatically, such as `**You've succeeded when** the four boxes
+  // are checked`, is left alone because lifting it out would sever the sentence.
+  var LEADINS = {
+    "do this":                     "tb-practice",
+    "bring to class":              "tb-practice",
+    "paste into your submission":  "tb-practice",
+    "you should see":              "tb-example",
+    "what you should see":         "tb-example",
+    "if it fails":                 "tb-pitfall",
+    "troubleshooting":             "tb-pitfall",
+    "checkpoint":                  "tb-key",
+    "what this direction requires": "tb-key",
+    "watch out":                   "tb-warning",
+    "why this matters":            "tb-intuition",
+    "time budget":                 "tb-note",
+    "no-code path":                "tb-note",
+    "in this part":                "tb-note",
+    "note":                        "tb-note",
+    "answer":                      "tb-note"
+  };
+  var BOXED = /\btb-(note|key|definition|example|intuition|practice|tip|warning|pitfall|exercise|ethics)\b/;
+  Array.prototype.forEach.call(flow.querySelectorAll("blockquote"), function (bq) {
+    // Step 1, or a hand-written {: .tb-warning}, has already claimed this one.
+    if (BOXED.test(bq.className || "")) { return; }
+    var first = bq.firstElementChild;
+    if (!first || first.tagName !== "P") { return; }
+
+    // The <strong> has to OPEN the paragraph; allow only whitespace before it.
+    var lead = first.firstChild;
+    while (lead && lead.nodeType === 3 && !lead.nodeValue.trim()) { lead = lead.nextSibling; }
+    if (!lead || lead.nodeType !== 1 || lead.tagName !== "STRONG") { return; }
+
+    var label = (lead.textContent || "").trim().replace(/[.:!]+$/, "").trim();
+    var cls = LEADINS[label.toLowerCase()];
+    if (!cls) { return; }
+
+    bq.classList.add(cls);
+    bq.setAttribute("data-title", label);
+
+    // Drop the label and the space after it; the title bar now carries it.
+    var after = lead.nextSibling;
+    lead.parentNode.removeChild(lead);
+    if (after && after.nodeType === 3) { after.nodeValue = after.nodeValue.replace(/^\s+/, ""); }
+    // A label on a line of its own leaves an empty paragraph behind.
+    if (!first.textContent.trim() && !first.firstElementChild) {
+      first.parentNode.removeChild(first);
+    }
+  });
+
   // -- 2. Sidenote reference markers -----------------------------------------
   Array.prototype.forEach.call(flow.querySelectorAll(".tb-sn"), function (note) {
     var ref = document.createElement("sup");
