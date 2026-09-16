@@ -121,7 +121,7 @@ A function that calls itself sounds like a trick. It is neither.
 info:
   chapter: 3                     # ghosted numeral, and the 3.1 / 3.2 section prefix
   eyebrow: "Tutorial"            # overrides the "Chapter 3" label
-  subtitle: "How a function can be written in terms of itself."
+  subtitle: "How a function can be written in terms of itself."   # falls back to info.purpose
   time: "35 minutes"
   level: "CS 173, Week 4"
   numbering: false               # switch off automatic section numbers
