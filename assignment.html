@@ -35,13 +35,21 @@ layout: default-standard
 # (paddingwidth / minwidth) and are referenced as layout.*
 # ---------------------------------------------------------------------------
 
-bandwidth:      min(1760px, 93vw) # the header/content/footer band: scales with the window,
-                                  # a touch narrower than the window itself so the page keeps
-                                  # its margins (Slate default: 640px; assets/ sets 75%)
-textmeasure:    820px # the prose column itself, ~80 characters at 16px
-railgap:        48px # space between the prose column and the rail
-tocfloat:       1900px # above this viewport width the contents float in the page margin
-raildrop:       1120px # below this width the rail collapses and sidenotes sit inline
+pagemargin:     clamp(16px, 7.5vw, 144px) # the left and right page margin: 1.5in on a
+                                          # 1920px desktop, proportional on anything smaller,
+                                          # and never less than Slate's own gutter
+bandwidth:      min(1760px, calc(100vw - 2 * var(--tb-margin) + 20px)) # the header/content/
+                                  # footer band.  The +20px offsets the 10px of horizontal
+                                  # padding Slate puts inside .inner, so the margin above is
+                                  # measured to the TEXT edge rather than to the band edge.
+                                  # Capped so a very wide monitor does not stretch one line
+                                  # across the whole screen (Slate default: 640px).
+textmeasure:    calc(var(--tb-band) - 20px) # the prose column: the full text box, so the
+                                  # left and right margins match instead of the page carrying
+                                  # a wide empty strip on the right
+tocfloat:       2240px # above this viewport width the contents float in the page margin;
+                       # below it there is no room beside the band, so the card stays in place
+raildrop:       1120px # below this width the page drops to a single narrow column
 
 solutiontext: "Show solution"
 
@@ -84,15 +92,19 @@ styleguide: "https://www.billmongan.com/Ursinus-CS173/Style-Guide"
      4.56:1, so chapter links are legible without changing the site's palette. */
   --tb-link:         #0e70c2;
 
-  --tb-measure:  {{ layout.textmeasure | default: "820px" }};
-  --tb-gap:      {{ layout.railgap     | default: "48px"  }};
-  --tb-band:     {{ layout.bandwidth   | default: "min(1760px, 93vw)" }};
-  /* Prose keeps a fixed, readable measure.  Everything that is not prose -- a wide
-     table, a figure, anything marked .tb-full -- should use the window instead of
-     being pinned to that measure, so the rail is simply whatever the band has left
-     after the prose column, floored so sidenotes always have somewhere to sit. */
-  --tb-rail:     max(0px, calc(var(--tb-band) - var(--tb-measure) - var(--tb-gap)));
-  --tb-pull:     calc(-1 * (var(--tb-rail) + var(--tb-gap)));
+  /* The band is derived from the page margin rather than the other way round: pick
+     the margin you want on each side, and the band is whatever is left.  That keeps
+     the left and right margins equal, which a fixed prose measure inside a fluid
+     band does not -- there the leftover width piles up on the right as dead space. */
+  --tb-margin:   {{ layout.pagemargin  | default: "clamp(16px, 7.5vw, 144px)" }};
+  --tb-band:     {{ layout.bandwidth   | default: "min(1760px, calc(100vw - 2 * var(--tb-margin) + 20px))" }};
+  /* .inner's own 10px of padding sits inside the band, so the text box is 20px
+     narrower.  Everything that has to line up with prose measures from here. */
+  --tb-text:     calc(var(--tb-band) - 20px);
+  --tb-measure:  {{ layout.textmeasure | default: "calc(var(--tb-band) - 20px)" }};
+  /* What .tb-full and a wide table may occupy: the text box, or the prose column
+     itself if a page has deliberately set a measure wider than the band. */
+  --tb-wide:     max(var(--tb-measure), var(--tb-text));
 }
 
 /* ---------------------------------------------------------------------------
@@ -232,22 +244,21 @@ h2:hover .tb-anchor, h3:hover .tb-anchor, .tb-anchor:focus { opacity: 1; }
    rendered beside the prose instead of inside it, until MathJax replaced the
    text node with an element.  A single column leaves nowhere for it to go. */
 .tb-flow > .tb-full {
-  width: calc(var(--tb-measure) + var(--tb-gap) + var(--tb-rail));
+  width: var(--tb-wide);
   max-width: none;
 }
 
 /* ===========================================================================
-   Sidenotes and margin notes (the Tufte technique: float into a negative
-   margin, numbered entirely by CSS counters so notes renumber themselves when
-   prose is reordered).
+   Sidenotes and margin notes, numbered entirely by CSS counters so notes
+   renumber themselves when prose is reordered.  They set inline, indented and
+   ruled, rather than floating into a margin rail: the page now spends its
+   horizontal space on prose, so there is no rail left to float into.
    =========================================================================== */
 .tb-sn, .tb-mn {
-  float: right;
-  clear: right;
-  width: var(--tb-rail);
-  margin-right: var(--tb-pull);
-  margin-top: .25em;
-  margin-bottom: 1em;
+  display: block;
+  margin: 1.1em 0 1.1em 1.1em;
+  padding: .7em 0 .7em 1em;
+  border-left: 3px solid var(--tb-rule-strong);
   font-size: .83em;
   line-height: 1.5;
   color: var(--tb-ink-soft);
@@ -256,9 +267,7 @@ h2:hover .tb-anchor, h3:hover .tb-anchor, .tb-anchor:focus { opacity: 1; }
 .tb-sn { counter-increment: tb-sn; }
 .tb-sn::before {
   content: counter(tb-sn);
-  position: absolute;
-  left: -1.35em;
-  top: -.15em;
+  margin-right: .5em;
   font-size: .85em;
   font-weight: 600;
   color: var(--tb-link);
@@ -534,7 +543,7 @@ h2:hover .tb-anchor, h3:hover .tb-anchor, .tb-anchor:focus { opacity: 1; }
   margin: 1.9em 0;
   width: max-content;
   min-width: 100%;
-  max-width: calc(var(--tb-measure) + var(--tb-gap) + var(--tb-rail));
+  max-width: var(--tb-wide);
 }
 .tb-tablewrap > table {
   display: table;
@@ -744,14 +753,6 @@ h2:hover .tb-anchor, h3:hover .tb-anchor, .tb-anchor:focus { opacity: 1; }
   /* There is no rail to break out into down here, so a table scrolls inside the
      measure rather than past the edge of the page. */
   .tb-tablewrap { width: auto; min-width: 0; max-width: 100%; }
-  .tb-sn, .tb-mn {
-    float: none; clear: none; width: auto;
-    margin: 1.1em 0 1.1em 1.1em;
-    padding: .7em 0 .7em 1em;
-    border-left: 3px solid var(--tb-rule-strong);
-    display: block;
-  }
-  .tb-sn::before { position: static; margin-right: .5em; }
 }
 @media (max-width: 640px) {
   .tb-opener__num { font-size: 76px; top: -14px; }
