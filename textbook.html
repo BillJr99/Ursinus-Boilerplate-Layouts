@@ -17,12 +17,12 @@ layout: default-standard
 # default-wide.html (paddingwidth / minwidth) and are referenced as layout.*
 # ---------------------------------------------------------------------------
 
-contentwidth: 1000px    # width of the header/content/footer band (Slate default: 640px)
-textmeasure: 680px      # the prose column itself, ~68-72 characters at 16px
-railwidth: 240px        # margin-note / sidenote rail
-railgap: 36px           # space between the prose column and the rail
-raildrop: 1120px        # below this viewport width the rail collapses inline
-tocfloat: 1560px       # above this viewport width the contents float in the page margin
+contentwidth:   1180px # width of the header/content/footer band (Slate default: 640px)
+textmeasure:    780px # the prose column itself, ~80 characters at 16px
+railwidth:      320px # margin-note / sidenote rail
+railgap:        44px # space between the prose column and the rail
+raildrop:       1200px # below this viewport width the rail collapses inline
+tocfloat:       1700px # above this viewport width the contents float in the page margin
 
 solutiontext: "Show solution"
 ---
@@ -63,10 +63,10 @@ solutiontext: "Show solution"
      4.56:1, so chapter links are legible without changing the site's palette. */
   --tb-link:         #0e70c2;
 
-  --tb-measure:  {{ layout.textmeasure | default: "680px" }};
-  --tb-rail:     {{ layout.railwidth   | default: "240px" }};
-  --tb-gap:      {{ layout.railgap     | default: "36px"  }};
-  --tb-pull:     calc(-1 * ({{ layout.railwidth | default: "240px" }} + {{ layout.railgap | default: "36px" }}));
+  --tb-measure:  {{ layout.textmeasure | default: "780px" }};
+  --tb-rail:     {{ layout.railwidth   | default: "320px" }};
+  --tb-gap:      {{ layout.railgap     | default: "44px"  }};
+  --tb-pull:     calc(-1 * ({{ layout.railwidth | default: "320px" }} + {{ layout.railgap | default: "44px" }}));
 }
 
 /* ---------------------------------------------------------------------------
@@ -77,7 +77,7 @@ solutiontext: "Show solution"
    --------------------------------------------------------------------------- */
 #main_content.inner,
 #header_wrap .inner,
-#footer_wrap .inner { max-width: {{ layout.contentwidth | default: "1000px" }}; }
+#footer_wrap .inner { max-width: {{ layout.contentwidth | default: "1180px" }}; }
 
 /* ===========================================================================
    Typography
@@ -138,6 +138,10 @@ solutiontext: "Show solution"
 /* The title already ends in a rule, so the first section under it does not need
    the full inter-section gap on top of that. */
 .tb-flow > .page__title + h1 { margin-top: 1.25em; }
+/* When a contents card follows the title instead, it should not sit flush against
+   the title's rule, and its own bottom margin would otherwise stack with the first
+   section's top margin into a gap three times the one above it. */
+.tb-flow > .page__title + .tb-toc { margin-top: 2.2em; margin-bottom: 0; }
 .tb-flow ul, .tb-flow ol { margin: 0 0 1.15em; padding-left: 1.5em; }
 .tb-flow li { margin-bottom: .4em; }
 .tb-flow a { color: var(--tb-link); }
@@ -402,6 +406,16 @@ h2:hover .tb-anchor, h3:hover .tb-anchor, .tb-anchor:focus { opacity: 1; }
    is excluded: those scroll within their own block instead. */
 .tb-flow :not(pre) > code { overflow-wrap: anywhere; }
 .tb-flow p, .tb-flow li, .tb-flow td, .tb-flow th, .tb-flow dd { overflow-wrap: break-word; }
+
+/* ...but not inside a table.  `anywhere` is also allowed to shrink an element's
+   min-content width, so a cell holding a code span was free to collapse to one
+   character per line, and auto table layout then sized that whole column to the
+   sliver it had just been told was acceptable: a notation table's first column
+   broke `( X | Y )` across four lines.  A code span is a single token and should
+   not be broken at all, and the table scrolls inside .tb-tablewrap if the sum of
+   the columns needs more room than the measure, so nothing is pushed off-page by
+   letting the column size to its content. */
+.tb-flow td code, .tb-flow th code { overflow-wrap: normal; white-space: nowrap; }
 .tb-pre { position: relative; }
 .tb-copy {
   position: absolute; top: 8px; right: 8px;
@@ -465,7 +479,15 @@ h2:hover .tb-anchor, h3:hover .tb-anchor, .tb-anchor:focus { opacity: 1; }
    =========================================================================== */
 /* A table whose content cannot wrap (long paths, code spans) would otherwise push
    past the column and, on a phone, scroll the whole page sideways.  Letting the
-   table scroll within its own box keeps the page itself fixed. */
+   table scroll within its own box keeps the page itself fixed.
+
+   display:block is what makes that scroll work with no wrapper element, but it
+   also stops the table filling its own box: the columns shrink to their content
+   and leave dead space after the last one, which is very visible on a two or
+   three column table.  So display:block is now only the no-script fallback.
+   Once the script has run it wraps each table in .tb-tablewrap, and the table
+   goes back to being a real table: it scrolls inside the wrapper AND spreads its
+   columns across the full measure. */
 .tb-flow table {
   display: block;
   width: 100%;
@@ -474,6 +496,13 @@ h2:hover .tb-anchor, h3:hover .tb-anchor, .tb-anchor:focus { opacity: 1; }
   border: 1px solid var(--tb-rule-strong);
   background: var(--tb-surface);
   margin: 1.9em 0;
+}
+.tb-tablewrap { overflow-x: auto; max-width: 100%; margin: 1.9em 0; }
+.tb-tablewrap > table {
+  display: table;
+  width: 100%;
+  max-width: none;
+  margin: 0;
 }
 .tb-flow th { background: #e4e6e8; color: var(--tb-ink-strong); border: 1px solid var(--tb-rule-strong); padding: 9px 12px; text-align: left; font-weight: 600; font-size: .92em; }
 .tb-flow td { border: 1px solid var(--tb-rule); padding: 9px 12px; font-size: .94em; }
@@ -548,7 +577,12 @@ h2:hover .tb-anchor, h3:hover .tb-anchor, .tb-anchor:focus { opacity: 1; }
   transition: transform .15s ease;
 }
 .tb-toc[open] > summary::before { transform: rotate(90deg); }
-.tb-toc ol { list-style: none; margin: 0; padding: 9px 16px 13px; counter-reset: tb-toc2; }
+/* An assignment's contents lists its generated sections AND every heading in the
+   body, so it can run to thirty-odd entries.  Cap the list and let it scroll: the
+   card stays glanceable instead of pushing the page down a whole screen.  The cap
+   is on the list rather than the card because the card is overflow:hidden for its
+   rounded corners, and the floating variant clears it again. */
+.tb-toc ol { list-style: none; margin: 0; padding: 9px 16px 13px; counter-reset: tb-toc2; max-height: 19em; overflow-y: auto; }
 .tb-toc li { margin: 0; }
 .tb-toc a {
   display: flex;
@@ -574,15 +608,21 @@ h2:hover .tb-anchor, h3:hover .tb-anchor, .tb-anchor:focus { opacity: 1; }
   border-left-color: var(--tb-link);
   background: rgba(14,112,194,.07);
 }
-.tb-toc .tb-toc-h3 a { padding-left: 26px; font-size: .82em; color: var(--tb-ink-faint); }
+/* Indent by DEPTH rather than by tag, because the two layouts start at different
+   levels: a chapter page's sections are h2, an assignment's generated sections
+   (Purpose, Tasks, Submission, Rubric) are h1 with the body's h2 beneath them.
+   Depth is measured from the shallowest heading actually on the page, so a
+   chapter's h2/h3 and an assignment's h1/h2/h3 both read as top level and below. */
+.tb-toc .tb-toc-d1 a { padding-left: 26px; font-size: .82em; color: var(--tb-ink-faint); }
+.tb-toc .tb-toc-d2 a { padding-left: 40px; font-size: .78em; color: var(--tb-ink-faint); }
 
 /* Numbers, only when the chapter itself is numbered. */
-.tb-numbered .tb-toc li:not(.tb-toc-h3) { counter-increment: tb-toc2; counter-reset: tb-toc3; }
-.tb-numbered .tb-toc li.tb-toc-h3 { counter-increment: tb-toc3; }
-.tb-numbered .tb-toc li:not(.tb-toc-h3) > a::before {
+.tb-numbered .tb-toc li:not(.tb-toc-d1):not(.tb-toc-d2) { counter-increment: tb-toc2; counter-reset: tb-toc3; }
+.tb-numbered .tb-toc li.tb-toc-d1 { counter-increment: tb-toc3; }
+.tb-numbered .tb-toc li:not(.tb-toc-d1):not(.tb-toc-d2) > a::before {
   content: var(--tb-chapter, "") counter(tb-toc2);
 }
-.tb-numbered .tb-toc li.tb-toc-h3 > a::before {
+.tb-numbered .tb-toc li.tb-toc-d1 > a::before {
   content: var(--tb-chapter, "") counter(tb-toc2) "." counter(tb-toc3);
 }
 .tb-numbered .tb-toc a::before {
@@ -625,11 +665,11 @@ h2:hover .tb-anchor, h3:hover .tb-anchor, .tb-anchor:focus { opacity: 1; }
    Responsive
    =========================================================================== */
 /* Float the contents into the page margin when there is room beside the band. */
-@media (min-width: {{ layout.tocfloat | default: "1560px" }}) {
+@media (min-width: {{ layout.tocfloat | default: "1700px" }}) {
   .tb-page > .tb-toc {
     position: fixed;
     top: 104px;
-    left: calc((100vw - {{ layout.contentwidth | default: "1000px" }}) / 2 - 236px);
+    left: calc((100vw - {{ layout.contentwidth | default: "1180px" }}) / 2 - 236px);
     width: 212px;
     max-width: none;
     max-height: 72vh;
@@ -650,13 +690,13 @@ h2:hover .tb-anchor, h3:hover .tb-anchor, .tb-anchor:focus { opacity: 1; }
   }
   .tb-scrolled > .tb-toc { opacity: 1; visibility: visible; }
   .tb-page > .tb-toc > summary { display: none; }
-  .tb-page > .tb-toc ol { padding: 0; }
+  .tb-page > .tb-toc ol { padding: 0; max-height: none; overflow-y: visible; }
 }
 
 /* Collapse the sidenote rail.  The band narrows to a single-column book width
    at the same time, so the page never carries a wide empty right margin, and
    every block -- opener, contents, boxes, prose -- shares one measure. */
-@media (max-width: {{ layout.raildrop | default: "1120px" }}) {
+@media (max-width: {{ layout.raildrop | default: "1200px" }}) {
   #main_content.inner,
   #header_wrap .inner,
   #footer_wrap .inner { max-width: calc(var(--tb-measure) + 44px); }
@@ -910,7 +950,13 @@ h2:hover .tb-anchor, h3:hover .tb-anchor, .tb-anchor:focus { opacity: 1; }
 
   // -- 3. Heading ids and hover anchors --------------------------------------
   var used = Object.create(null);
-  var headings = flow.querySelectorAll("h2, h3");
+  // h1 is collected too: a chapter page has none inside the flow, but an
+  // assignment's generated sections are h1 and belong in its contents.
+  var headings = flow.querySelectorAll("h1:not(.page__title), h2, h3");
+  var topLevel = 6;
+  Array.prototype.forEach.call(headings, function (h) {
+    topLevel = Math.min(topLevel, parseInt(h.tagName.charAt(1), 10));
+  });
   Array.prototype.forEach.call(headings, function (h) {
     if (!h.id) {
       var base = (h.textContent || "").toLowerCase().trim()
@@ -935,7 +981,8 @@ h2:hover .tb-anchor, h3:hover .tb-anchor, .tb-anchor:focus { opacity: 1; }
     var list = toc.querySelector("ol");
     Array.prototype.forEach.call(headings, function (h) {
       var li = document.createElement("li");
-      if (h.tagName === "H3") { li.className = "tb-toc-h3"; }
+      var depth = Math.min(2, parseInt(h.tagName.charAt(1), 10) - topLevel);
+      if (depth > 0) { li.className = "tb-toc-d" + depth; }
       var a = document.createElement("a");
       a.href = "#" + h.id;
       // Drop the injected anchor glyph from the label.
@@ -988,7 +1035,21 @@ h2:hover .tb-anchor, h3:hover .tb-anchor, .tb-anchor:focus { opacity: 1; }
   window.addEventListener("resize", update, { passive: true });
   update();
 
-  // -- 7. Copy buttons on code blocks ----------------------------------------
+  // -- 7. Table wrappers -----------------------------------------------------
+  // See the .tb-tablewrap note in the stylesheet: this is what lets a table both
+  // scroll on a narrow screen and spread its columns across the whole measure.
+  Array.prototype.forEach.call(flow.querySelectorAll("table"), function (t) {
+    if (t.parentNode.classList && t.parentNode.classList.contains("tb-tablewrap")) { return; }
+    var wrap = document.createElement("div");
+    wrap.className = "tb-tablewrap";
+    // .tb-full is placed on the table by the page author, but once the table is
+    // wrapped the WRAPPER is the grid child, so the break-out has to move with it.
+    if (t.classList.contains("tb-full")) { wrap.classList.add("tb-full"); }
+    t.parentNode.insertBefore(wrap, t);
+    wrap.appendChild(t);
+  });
+
+  // -- 8. Copy buttons on code blocks ----------------------------------------
   Array.prototype.forEach.call(flow.querySelectorAll("pre"), function (pre) {
     if (pre.parentNode.classList && pre.parentNode.classList.contains("tb-pre")) { return; }
     var host = pre.parentNode.classList && pre.parentNode.classList.contains("highlight")
@@ -1020,7 +1081,7 @@ h2:hover .tb-anchor, h3:hover .tb-anchor, .tb-anchor:focus { opacity: 1; }
     wrap.appendChild(btn);
   });
 
-  // -- 8. Default summary text for solution blocks ---------------------------
+  // -- 9. Default summary text for solution blocks ---------------------------
   Array.prototype.forEach.call(flow.querySelectorAll(".tb-solution"), function (d) {
     if (!d.querySelector("summary")) {
       var s = document.createElement("summary");
