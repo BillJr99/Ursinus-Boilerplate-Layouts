@@ -112,6 +112,32 @@ solutiontext: "Show solution"
 }
 .tb-flow h3 { font-size: 1.22em; font-weight: 600; margin: 1.9em 0 .5em; }
 .tb-flow h4 { font-size: 1.02em; font-weight: 600; margin: 1.6em 0 .4em; color: var(--tb-ink); }
+
+/* A layout that emits its own sections as h1 -- assignment.html does, one level
+   above the h2 the page body uses -- has no .tb-opener to separate the page
+   title from the first of them, and Slate leaves both at a 10px margin with no
+   rule, so a 36px section heading ends up with LESS space around it than the
+   26px body heading below it.  These are child selectors on purpose: in
+   textbook.html the title sits inside .tb-opener, which already draws the rule,
+   so a chapter page is untouched. */
+.tb-flow > .page__title {
+  font-size: 2.4em;
+  font-weight: 600;
+  letter-spacing: -.012em;
+  margin: 0 0 1.15em;
+  padding-bottom: .45em;
+  border-bottom: 2px solid var(--tb-ink-strong);
+}
+.tb-flow > h1:not(.page__title) {
+  font-size: 2em;
+  font-weight: 600;
+  margin: 2.6em 0 .75em;
+  padding-bottom: .3em;
+  border-bottom: 2px solid var(--tb-rule-strong);
+}
+/* The title already ends in a rule, so the first section under it does not need
+   the full inter-section gap on top of that. */
+.tb-flow > .page__title + h1 { margin-top: 1.25em; }
 .tb-flow ul, .tb-flow ol { margin: 0 0 1.15em; padding-left: 1.5em; }
 .tb-flow li { margin-bottom: .4em; }
 .tb-flow a { color: var(--tb-link); }
@@ -162,11 +188,23 @@ h2:hover .tb-anchor, h3:hover .tb-anchor, .tb-anchor:focus { opacity: 1; }
    =========================================================================== */
 .tb-flow {
   display: grid;
-  grid-template-columns: minmax(0, var(--tb-measure)) var(--tb-gap) var(--tb-rail);
+  grid-template-columns: minmax(0, var(--tb-measure));
   justify-content: start;
 }
 .tb-flow > *      { grid-column: 1; min-width: 0; }
-.tb-flow > .tb-full { grid-column: 1 / -1; justify-self: stretch; }
+
+/* Break out to the full band with an explicit width rather than by spanning a
+   three-column track.  The track used to be measure + gap + rail so that
+   .tb-full could span 1 / -1, but kramdown emits a $$...$$ display equation as
+   a BARE TEXT NODE at the top level of the flow, and a bare text node becomes
+   an ANONYMOUS grid item that no selector can place.  With spare columns to
+   fall into, every such equation auto-placed into the gap and the rail and
+   rendered beside the prose instead of inside it, until MathJax replaced the
+   text node with an element.  A single column leaves nowhere for it to go. */
+.tb-flow > .tb-full {
+  width: calc(var(--tb-measure) + var(--tb-gap) + var(--tb-rail));
+  max-width: none;
+}
 
 /* ===========================================================================
    Sidenotes and margin notes (the Tufte technique: float into a negative
@@ -628,6 +666,7 @@ h2:hover .tb-anchor, h3:hover .tb-anchor, .tb-anchor:focus { opacity: 1; }
   .tb-nav,
   .tb-page > .tb-toc { max-width: none; }
   .tb-flow { grid-template-columns: minmax(0, 1fr); }
+  .tb-flow > .tb-full { width: auto; }
   .tb-sn, .tb-mn {
     float: none; clear: none; width: auto;
     margin: 1.1em 0 1.1em 1.1em;

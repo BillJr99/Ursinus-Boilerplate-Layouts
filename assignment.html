@@ -1,6 +1,51 @@
 ---
 layout: default-standard
 
+# ---------------------------------------------------------------------------
+# assignment.html -- the assignment / lab / project page.
+#
+# This layout renders the assignment furniture from page.info.* and wraps the
+# whole page in the same reading typography that textbook.html uses, so an
+# assignment and the walkthrough it links to read as one document set.
+#
+# The <style> and <script> blocks below are shared VERBATIM with textbook.html.
+# Jekyll cannot {% include %} from inside a _layouts submodule, so they are
+# duplicated rather than factored out.  Keep them byte-identical; to check:
+#
+#   sed -n '/^<style>$/,/^<\/style>$/p' assignment.html > /tmp/a
+#   sed -n '/^<style>$/,/^<\/style>$/p' textbook.html   > /tmp/b
+#   diff /tmp/a /tmp/b        # and the same for /^<script>$/,/^<\/script>$/
+#
+# The whole body sits inside ONE .tb-flow, so a generated section (the rubric
+# table, the contract lists) is styled exactly like the same construct written
+# by hand in the page body.  .tb-flow is a CSS grid, so every direct child must
+# be a block element: loose text between tags would become an anonymous grid
+# item and land in the sidenote rail.  That is why the connective sentences
+# below are wrapped in <p>.
+#
+# Three pieces of the chapter furniture are deliberately NOT emitted here, and
+# omitting the markup IS the opt-out because the script tests for each one:
+#
+#   .tb-numbered   automatic section numbers would collide with the "Part 1",
+#                  "Part 2" headings assignment bodies already use.
+#   .tb-toc        the contents card is built from h2/h3, which would list the
+#                  body and omit nothing, but an assignment is a task list read
+#                  top to bottom, not a chapter navigated by section.
+#   .tb-progress   a reading-progress bar misreads on a page you work through
+#                  over a week rather than read in one sitting.
+#
+# The layout-level variables here follow the precedent set by default-wide.html
+# (paddingwidth / minwidth) and are referenced as layout.*
+# ---------------------------------------------------------------------------
+
+contentwidth: 1000px    # width of the header/content/footer band (Slate default: 640px)
+textmeasure: 680px      # the prose column itself, ~68-72 characters at 16px
+railwidth: 240px        # margin-note / sidenote rail
+railgap: 36px           # space between the prose column and the rail
+raildrop: 1120px        # below this viewport width the rail collapses inline
+
+solutiontext: "Show solution"
+
 styleguide: "https://www.billmongan.com/Ursinus-CS173/Style-Guide"
 ---
 
@@ -8,8 +53,699 @@ styleguide: "https://www.billmongan.com/Ursinus-CS173/Style-Guide"
 &features=es6"></script>
 <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
+{% comment %}
+  default-standard.html requests Lexend Deca from the legacy v1 Google Fonts API at
+  weight 400 only, and with no fallback stack.  Every bold heading on the page is
+  therefore SYNTHETICALLY emboldened.  The request below is additive -- it loads the
+  real 300-700 cuts for this page only and touches no other layout.
+{% endcomment %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend+Deca:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+/* ===========================================================================
+   Design tokens.  Colours are taken from, or derived from, values already in
+   use: jekyll-theme-slate (#373737 ink, #222 headings, #f2f2f2 band, #0F79D0
+   links, #fff code surface) and this repo's existing semantic accents
+   (#3FB950 green, #F85149 red, #CCA700 amber, #007ACC blue).  Derived accents
+   are darkened so that every label and body pair clears WCAG AA on its tint.
+   =========================================================================== */
+:root {
+  --tb-ink:          #373737;
+  --tb-ink-strong:   #222222;
+  --tb-ink-soft:     #5b5b5b;
+  --tb-ink-faint:    #6e6e6e;
+  --tb-paper:        #f2f2f2;
+  --tb-surface:      #ffffff;
+  --tb-rule:         #dcdcdc;
+  --tb-rule-strong:  #c2c2c2;
+  /* Slate's own link colour (#0F79D0) measures 4.02:1 on the #f2f2f2 band, just
+     under WCAG AA for body text.  This is the same hue one step darker, at
+     4.56:1, so chapter links are legible without changing the site's palette. */
+  --tb-link:         #0e70c2;
+
+  --tb-measure:  {{ layout.textmeasure | default: "680px" }};
+  --tb-rail:     {{ layout.railwidth   | default: "240px" }};
+  --tb-gap:      {{ layout.railgap     | default: "36px"  }};
+  --tb-pull:     calc(-1 * ({{ layout.railwidth | default: "240px" }} + {{ layout.railgap | default: "36px" }}));
+}
+
+/* ---------------------------------------------------------------------------
+   Widen Slate's 640px measure.  Header, content and footer widen together so
+   the masthead stays aligned with the text below it.  These rules are emitted
+   only on pages using this layout, so no other page type is affected.
+   (exercise.html sets the precedent for a content layout adjusting the frame.)
+   --------------------------------------------------------------------------- */
+#main_content.inner,
+#header_wrap .inner,
+#footer_wrap .inner { max-width: {{ layout.contentwidth | default: "1000px" }}; }
+
+/* ===========================================================================
+   Typography
+   =========================================================================== */
+.tb-page, .tb-page *, .tb-page *::before, .tb-page *::after { box-sizing: border-box; }
+
+.tb-page {
+  font-family: 'Lexend Deca', 'Segoe UI', Helvetica, Arial, sans-serif;
+  color: var(--tb-ink);
+  line-height: 1.7;
+  counter-reset: tb-h2 tb-fig tb-ex tb-sn;
+  -webkit-font-smoothing: antialiased;
+}
+.tb-page p { text-wrap: pretty; margin: 0 0 1.15em; }
+.tb-page h1, .tb-page h2, .tb-page h3, .tb-page h4 {
+  font-family: inherit;
+  color: var(--tb-ink-strong);
+  text-wrap: balance;
+  line-height: 1.25;
+}
+
+/* Slate underlines h2 with a background image (bg_hr.png); replace it with a
+   clean rule so section headings read as chapter divisions. */
+.tb-flow h2 {
+  background: none;
+  font-size: 1.65em;
+  font-weight: 600;
+  margin: 2.2em 0 .7em;
+  padding-bottom: .35em;
+  border-bottom: 1px solid var(--tb-rule-strong);
+  counter-reset: tb-h3;
+}
+.tb-flow h3 { font-size: 1.22em; font-weight: 600; margin: 1.9em 0 .5em; }
+.tb-flow h4 { font-size: 1.02em; font-weight: 600; margin: 1.6em 0 .4em; color: var(--tb-ink); }
+
+/* A layout that emits its own sections as h1 -- assignment.html does, one level
+   above the h2 the page body uses -- has no .tb-opener to separate the page
+   title from the first of them, and Slate leaves both at a 10px margin with no
+   rule, so a 36px section heading ends up with LESS space around it than the
+   26px body heading below it.  These are child selectors on purpose: in
+   textbook.html the title sits inside .tb-opener, which already draws the rule,
+   so a chapter page is untouched. */
+.tb-flow > .page__title {
+  font-size: 2.4em;
+  font-weight: 600;
+  letter-spacing: -.012em;
+  margin: 0 0 1.15em;
+  padding-bottom: .45em;
+  border-bottom: 2px solid var(--tb-ink-strong);
+}
+.tb-flow > h1:not(.page__title) {
+  font-size: 2em;
+  font-weight: 600;
+  margin: 2.6em 0 .75em;
+  padding-bottom: .3em;
+  border-bottom: 2px solid var(--tb-rule-strong);
+}
+/* The title already ends in a rule, so the first section under it does not need
+   the full inter-section gap on top of that. */
+.tb-flow > .page__title + h1 { margin-top: 1.25em; }
+.tb-flow ul, .tb-flow ol { margin: 0 0 1.15em; padding-left: 1.5em; }
+.tb-flow li { margin-bottom: .4em; }
+.tb-flow a { color: var(--tb-link); }
+
+/* Automatic section numbering.  Disable per page with `numbering: false`. */
+.tb-numbered .tb-flow h2::before {
+  counter-increment: tb-h2;
+  content: var(--tb-chapter, "") counter(tb-h2) "\00a0\00a0";
+  color: var(--tb-ink-faint);
+  font-weight: 400;
+}
+.tb-numbered .tb-flow h3::before {
+  counter-increment: tb-h3;
+  content: var(--tb-chapter, "") counter(tb-h2) "." counter(tb-h3) "\00a0\00a0";
+  color: var(--tb-ink-faint);
+  font-weight: 400;
+}
+
+/* Opening paragraph drop cap: {: .tb-lede} */
+.tb-flow .tb-lede { font-size: 1.1em; color: var(--tb-ink); }
+.tb-flow .tb-lede::first-letter {
+  float: left;
+  font-size: 3.4em;
+  line-height: .82;
+  font-weight: 600;
+  margin: .06em .09em 0 0;
+  color: var(--tb-ink-strong);
+}
+
+/* Hover anchor on headings, and a highlight when deep-linked. */
+.tb-anchor {
+  float: left;
+  margin-left: -.85em;
+  width: .85em;
+  opacity: 0;
+  text-decoration: none;
+  color: var(--tb-rule-strong);
+  font-weight: 400;
+}
+h2:hover .tb-anchor, h3:hover .tb-anchor, .tb-anchor:focus { opacity: 1; }
+.tb-flow :target { animation: tb-flash 1.6s ease-out; }
+@keyframes tb-flash { from { background: #fdf3d3; } to { background: transparent; } }
+
+/* ===========================================================================
+   The reading grid.  Kramdown emits top-level blocks as direct children, so
+   every paragraph and heading becomes a grid item automatically and .tb-full
+   can break out to the full band with a single class (the Distill approach).
+   =========================================================================== */
+.tb-flow {
+  display: grid;
+  grid-template-columns: minmax(0, var(--tb-measure));
+  justify-content: start;
+}
+.tb-flow > *      { grid-column: 1; min-width: 0; }
+
+/* Break out to the full band with an explicit width rather than by spanning a
+   three-column track.  The track used to be measure + gap + rail so that
+   .tb-full could span 1 / -1, but kramdown emits a $$...$$ display equation as
+   a BARE TEXT NODE at the top level of the flow, and a bare text node becomes
+   an ANONYMOUS grid item that no selector can place.  With spare columns to
+   fall into, every such equation auto-placed into the gap and the rail and
+   rendered beside the prose instead of inside it, until MathJax replaced the
+   text node with an element.  A single column leaves nowhere for it to go. */
+.tb-flow > .tb-full {
+  width: calc(var(--tb-measure) + var(--tb-gap) + var(--tb-rail));
+  max-width: none;
+}
+
+/* ===========================================================================
+   Sidenotes and margin notes (the Tufte technique: float into a negative
+   margin, numbered entirely by CSS counters so notes renumber themselves when
+   prose is reordered).
+   =========================================================================== */
+.tb-sn, .tb-mn {
+  float: right;
+  clear: right;
+  width: var(--tb-rail);
+  margin-right: var(--tb-pull);
+  margin-top: .25em;
+  margin-bottom: 1em;
+  font-size: .83em;
+  line-height: 1.5;
+  color: var(--tb-ink-soft);
+  position: relative;
+}
+.tb-sn { counter-increment: tb-sn; }
+.tb-sn::before {
+  content: counter(tb-sn);
+  position: absolute;
+  left: -1.35em;
+  top: -.15em;
+  font-size: .85em;
+  font-weight: 600;
+  color: var(--tb-link);
+}
+/* When the script runs it injects an in-text reference marker, which takes
+   over the counting so the number appears at the anchor point too. */
+.tb-js .tb-sn { counter-increment: none; }
+.tb-js .tb-sn-ref { counter-increment: tb-sn; }
+.tb-sn-ref {
+  font-size: .68em;
+  font-weight: 600;
+  vertical-align: super;
+  line-height: 0;
+  color: var(--tb-link);
+  margin-left: .12em;
+}
+.tb-sn-ref::after { content: counter(tb-sn); }
+
+/* ===========================================================================
+   Callout boxes.  Authored as a kramdown blockquote plus one attribute list:
+       > Text of the box.
+       {: .tb-warning}
+   A custom heading needs no extra markup:
+       {: .tb-warning data-title="Off-by-one errors"}
+   These are class selectors, so they outrank Slate's element-level blockquote
+   rule without !important.
+   =========================================================================== */
+.tb-note, .tb-key, .tb-definition, .tb-example, .tb-intuition, .tb-practice,
+.tb-tip, .tb-warning, .tb-pitfall, .tb-exercise, .tb-ethics {
+  --tb-accent: #41505e;
+  --tb-tint:   #eceff2;
+  --tb-edge:   #ccd4db;
+  margin: 1.9em 0;
+  padding: 0 18px 4px;
+  background: var(--tb-tint);
+  color: var(--tb-ink);
+  border: 1px solid var(--tb-edge);
+  border-left: 4px solid var(--tb-accent);
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.055);
+  overflow: hidden;
+  break-inside: avoid;
+}
+.tb-note::before, .tb-key::before, .tb-definition::before, .tb-example::before,
+.tb-intuition::before, .tb-practice::before, .tb-tip::before, .tb-warning::before,
+.tb-pitfall::before, .tb-exercise::before, .tb-ethics::before {
+  display: block;
+  margin: 0 -18px .9em;
+  padding: 7px 18px;
+  background: var(--tb-accent);
+  color: #fff;
+  font-size: .74em;
+  font-weight: 600;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+.tb-note > :last-child, .tb-key > :last-child, .tb-definition > :last-child,
+.tb-example > :last-child, .tb-intuition > :last-child, .tb-practice > :last-child,
+.tb-tip > :last-child, .tb-warning > :last-child, .tb-pitfall > :last-child,
+.tb-exercise > :last-child, .tb-ethics > :last-child { margin-bottom: .55em; }
+
+.tb-note::before       { content: "Note"; }
+.tb-key::before        { content: "Key Idea"; }
+.tb-definition::before { content: "Definition"; }
+.tb-example::before    { content: "Example"; }
+.tb-intuition::before  { content: "Intuition"; }
+.tb-practice::before   { content: "In Practice"; }
+.tb-tip::before        { content: "Tip"; }
+.tb-warning::before    { content: "Warning"; }
+.tb-pitfall::before    { content: "Common Pitfall"; }
+.tb-ethics::before     { content: "Ethics and AI Literacy"; }
+.tb-exercise::before   { counter-increment: tb-ex; content: "Exercise " counter(tb-ex); }
+
+/* A data-title always wins over the default label. */
+.tb-note[data-title]::before, .tb-key[data-title]::before,
+.tb-definition[data-title]::before, .tb-example[data-title]::before,
+.tb-intuition[data-title]::before, .tb-practice[data-title]::before,
+.tb-tip[data-title]::before, .tb-warning[data-title]::before,
+.tb-pitfall[data-title]::before, .tb-ethics[data-title]::before { content: attr(data-title); }
+.tb-exercise[data-title]::before {
+  counter-increment: tb-ex;
+  content: "Exercise " counter(tb-ex) " \2014  " attr(data-title);
+}
+
+/* Accents.  Green for affirmative material, red for hazards. */
+.tb-key        { --tb-accent: #1f7a38; --tb-tint: #e9f5ec; --tb-edge: #bfe0c8; }
+.tb-tip        { --tb-accent: #1f7a38; --tb-tint: #edf7ef; --tb-edge: #c8e4cf; }
+.tb-warning    { --tb-accent: #b3261e; --tb-tint: #fcecea; --tb-edge: #f2c8c4; }
+.tb-pitfall    { --tb-accent: #8c1d18; --tb-tint: #faeae8; --tb-edge: #eec3bf; }
+.tb-practice   { --tb-accent: #8a6100; --tb-tint: #fbf3de; --tb-edge: #e8d6a6; }
+.tb-example    { --tb-accent: #0b5e9e; --tb-tint: #e9f1fa; --tb-edge: #c3d8ee; }
+.tb-definition { --tb-accent: #0f6b6b; --tb-tint: #e6f3f3; --tb-edge: #bcdcdc; }
+.tb-intuition  { --tb-accent: #5b3d9e; --tb-tint: #efeafa; --tb-edge: #d3c8ee; }
+.tb-exercise   { --tb-accent: #2d4a8a; --tb-tint: #eaeefa; --tb-edge: #c8d3ee; }
+.tb-ethics     { --tb-accent: #8a2b64; --tb-tint: #faeaf3; --tb-edge: #eec6dd; }
+
+/* ===========================================================================
+   Collapsible solution.  The repo's first authored use of <details>.
+   =========================================================================== */
+.tb-exercise + .tb-solution { margin-top: -1.55em; border-top-left-radius: 0; border-top-right-radius: 0; }
+.tb-solution {
+  margin: 1.1em 0 1.9em;
+  border: 1px solid var(--tb-rule);
+  border-radius: 4px;
+  background: var(--tb-surface);
+  break-inside: avoid;
+}
+.tb-solution > summary {
+  cursor: pointer;
+  padding: 9px 14px;
+  font-size: .86em;
+  font-weight: 600;
+  color: var(--tb-link);
+  list-style: none;
+  user-select: none;
+}
+.tb-solution > summary::-webkit-details-marker { display: none; }
+.tb-solution > summary::before { content: "\25B8\00a0\00a0"; display: inline-block; transition: transform .15s ease; }
+.tb-solution[open] > summary::before { transform: rotate(90deg); }
+.tb-solution[open] > summary { border-bottom: 1px solid var(--tb-rule); }
+.tb-solution > *:not(summary) { margin-left: 14px; margin-right: 14px; }
+.tb-solution > *:nth-child(2) { margin-top: .9em; }
+.tb-solution > *:last-child { margin-bottom: .9em; }
+
+/* ===========================================================================
+   Figures, with automatic numbering.
+   =========================================================================== */
+.tb-fig {
+  counter-increment: tb-fig;
+  margin: 2em 0;
+  text-align: center;
+  break-inside: avoid;
+}
+.tb-fig img { max-width: 100%; height: auto; border: 1px solid var(--tb-rule); background: #fff; }
+.tb-fig figcaption {
+  margin-top: .7em;
+  font-size: .85em;
+  line-height: 1.55;
+  color: var(--tb-ink-soft);
+  text-align: left;
+}
+.tb-fig figcaption::before {
+  content: "Figure " var(--tb-chapter, "") counter(tb-fig) " \2014  ";
+  font-weight: 600;
+  color: var(--tb-ink-strong);
+}
+
+/* ===========================================================================
+   Code.  Slate styles pre/code already; this refines it and adds a light
+   syntax theme for Rouge's token classes, which GitHub Pages emits for fenced
+   code blocks but Slate's stylesheet does not colour.
+   =========================================================================== */
+.tb-flow pre, .tb-flow .highlight {
+  background: var(--tb-surface);
+  border: 1px solid var(--tb-rule);
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.055);
+}
+.tb-flow pre { padding: 15px 17px; overflow-x: auto; line-height: 1.55; }
+.tb-flow .highlight pre { border: 0; box-shadow: none; border-radius: 0; margin: 0; }
+.tb-flow pre, .tb-flow code { font-family: 'Consolas', 'Menlo', 'Courier New', monospace; font-size: .875em; }
+.tb-flow p > code, .tb-flow li > code, .tb-flow td > code, .tb-flow th > code {
+  background: #e9eaec;
+  box-shadow: none;
+  padding: .12em .38em;
+  border-radius: 3px;
+  color: #333;
+}
+/* An inline code span holding a long path, URL or call signature cannot wrap at a
+   space, so on a phone it would push the whole page sideways.  Code inside <pre>
+   is excluded: those scroll within their own block instead. */
+.tb-flow :not(pre) > code { overflow-wrap: anywhere; }
+.tb-flow p, .tb-flow li, .tb-flow td, .tb-flow th, .tb-flow dd { overflow-wrap: break-word; }
+.tb-pre { position: relative; }
+.tb-copy {
+  position: absolute; top: 8px; right: 8px;
+  padding: 3px 9px;
+  font: 600 11px/1.6 'Lexend Deca', Helvetica, Arial, sans-serif;
+  color: var(--tb-ink-soft);
+  background: #f4f4f4;
+  border: 1px solid var(--tb-rule);
+  border-radius: 3px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity .15s ease;
+}
+.tb-pre:hover .tb-copy, .tb-copy:focus { opacity: 1; }
+
+/* Rouge light theme, scoped to .tb-flow so it cannot affect the site's own
+   highlighting elsewhere on the page.  Slate ships rouge-github already; these
+   rules simply tune code colour to sit with the box palette, and they apply only
+   inside a textbook chapter. */
+.tb-flow .highlight .c,
+.tb-flow .highlight .c1,
+.tb-flow .highlight .cm,
+.tb-flow .highlight .cs { color: #6a737d; font-style: italic; }
+.tb-flow .highlight .k,
+.tb-flow .highlight .kd,
+.tb-flow .highlight .kn,
+.tb-flow .highlight .kp,
+.tb-flow .highlight .kr,
+.tb-flow .highlight .kt { color: #a626a4; }
+.tb-flow .highlight .s,
+.tb-flow .highlight .s1,
+.tb-flow .highlight .s2,
+.tb-flow .highlight .sb,
+.tb-flow .highlight .sc,
+.tb-flow .highlight .sd,
+.tb-flow .highlight .se,
+.tb-flow .highlight .sh,
+.tb-flow .highlight .si,
+.tb-flow .highlight .sx,
+.tb-flow .highlight .sr { color: #0a7d3f; }
+.tb-flow .highlight .m,
+.tb-flow .highlight .mi,
+.tb-flow .highlight .mf,
+.tb-flow .highlight .mh,
+.tb-flow .highlight .mo,
+.tb-flow .highlight .il { color: #b35900; }
+.tb-flow .highlight .nf,
+.tb-flow .highlight .nd { color: #4078f2; }
+.tb-flow .highlight .nc,
+.tb-flow .highlight .nn { color: #9a6b00; }
+.tb-flow .highlight .nb,
+.tb-flow .highlight .bp { color: #0b5e9e; }
+.tb-flow .highlight .o,
+.tb-flow .highlight .ow { color: #4a4a4a; }
+.tb-flow .highlight .nt { color: #b3261e; }
+.tb-flow .highlight .na { color: #9a6b00; }
+.tb-flow .highlight .err { color: #b3261e; background: #fcecea; }
+
+/* ===========================================================================
+   Tables.  Slate's default is a heavy #373737 grid; soften it for prose.
+   =========================================================================== */
+/* A table whose content cannot wrap (long paths, code spans) would otherwise push
+   past the column and, on a phone, scroll the whole page sideways.  Letting the
+   table scroll within its own box keeps the page itself fixed. */
+.tb-flow table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--tb-rule-strong);
+  background: var(--tb-surface);
+  margin: 1.9em 0;
+}
+.tb-flow th { background: #e4e6e8; color: var(--tb-ink-strong); border: 1px solid var(--tb-rule-strong); padding: 9px 12px; text-align: left; font-weight: 600; font-size: .92em; }
+.tb-flow td { border: 1px solid var(--tb-rule); padding: 9px 12px; font-size: .94em; }
+.tb-flow tbody tr:nth-child(even) { background: #fafafa; }
+
+/* Slate applies a border and shadow to every img; keep inline figures clean. */
+.tb-flow p img { border: 1px solid var(--tb-rule); box-shadow: none; }
+
+/* ===========================================================================
+   Chapter opener
+   =========================================================================== */
+
+/* Blocks that sit outside .tb-flow still align to the prose column, so the
+   objectives box is exactly as wide as a callout inside the chapter. */
+.tb-opener,
+.tb-page > .tb-key,
+.tb-glossary,
+.tb-nav,
+.tb-page > .tb-toc { max-width: var(--tb-measure); margin-right: auto; }
+
+.tb-opener { position: relative; margin-bottom: 2.4em; padding-bottom: 1.4em; border-bottom: 2px solid var(--tb-ink-strong); }
+.tb-opener__num {
+  position: absolute; right: 0; top: -22px;
+  font-size: 118px; font-weight: 700; line-height: 1;
+  color: rgba(55,55,55,.07);
+  pointer-events: none; user-select: none;
+}
+.tb-opener__eyebrow {
+  margin: 0 0 .3em; font-size: .76em; font-weight: 600;
+  letter-spacing: .16em; text-transform: uppercase; color: var(--tb-ink-faint);
+}
+.tb-page h1.page__title { font-size: 2.5em; font-weight: 700; margin: 0; letter-spacing: -.012em; }
+.tb-opener__sub { margin: .5em 0 0; font-size: 1.16em; font-weight: 300; color: var(--tb-ink-soft); max-width: 34em; }
+.tb-meta { margin: 1.2em 0 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 8px 10px; }
+.tb-meta li {
+  margin: 0; padding: 4px 11px;
+  font-size: .78em; color: var(--tb-ink-soft);
+  background: #e7e8ea; border-radius: 3px;
+}
+.tb-meta li strong { color: var(--tb-ink-strong); font-weight: 600; }
+
+/* ---------------------------------------------------------------------------
+   Contents.  Section numbers are generated by counters that mirror the heading
+   numbering, so the card stays in step with the chapter automatically.
+   --------------------------------------------------------------------------- */
+.tb-toc {
+  margin: 0 0 2.4em;
+  border: 1px solid var(--tb-rule);
+  border-radius: 5px;
+  background: var(--tb-surface);
+  box-shadow: 0 1px 3px rgba(0,0,0,.05);
+  overflow: hidden;
+}
+.tb-toc > summary {
+  cursor: pointer;
+  padding: 11px 16px;
+  font-size: .71em;
+  font-weight: 600;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: var(--tb-ink-faint);
+  background: #f6f7f8;
+  border-bottom: 1px solid var(--tb-rule);
+  list-style: none;
+  user-select: none;
+}
+.tb-toc > summary::-webkit-details-marker { display: none; }
+.tb-toc > summary::before {
+  content: "\25B8";
+  display: inline-block;
+  margin-right: .8em;
+  transition: transform .15s ease;
+}
+.tb-toc[open] > summary::before { transform: rotate(90deg); }
+.tb-toc ol { list-style: none; margin: 0; padding: 9px 16px 13px; counter-reset: tb-toc2; }
+.tb-toc li { margin: 0; }
+.tb-toc a {
+  display: flex;
+  align-items: baseline;
+  gap: .65em;
+  padding: 5px 8px 5px 12px;
+  font-size: .87em;
+  line-height: 1.45;
+  color: var(--tb-ink-soft);
+  text-decoration: none;
+  border-left: 2px solid var(--tb-rule);
+  border-radius: 0 3px 3px 0;
+  transition: color .13s ease, border-color .13s ease, background-color .13s ease;
+}
+.tb-toc a:hover {
+  color: var(--tb-link);
+  border-left-color: var(--tb-link);
+  background: rgba(14,112,194,.05);
+}
+.tb-toc a[aria-current="true"] {
+  color: var(--tb-link);
+  font-weight: 600;
+  border-left-color: var(--tb-link);
+  background: rgba(14,112,194,.07);
+}
+.tb-toc .tb-toc-h3 a { padding-left: 26px; font-size: .82em; color: var(--tb-ink-faint); }
+
+/* Numbers, only when the chapter itself is numbered. */
+.tb-numbered .tb-toc li:not(.tb-toc-h3) { counter-increment: tb-toc2; counter-reset: tb-toc3; }
+.tb-numbered .tb-toc li.tb-toc-h3 { counter-increment: tb-toc3; }
+.tb-numbered .tb-toc li:not(.tb-toc-h3) > a::before {
+  content: var(--tb-chapter, "") counter(tb-toc2);
+}
+.tb-numbered .tb-toc li.tb-toc-h3 > a::before {
+  content: var(--tb-chapter, "") counter(tb-toc2) "." counter(tb-toc3);
+}
+.tb-numbered .tb-toc a::before {
+  flex: 0 0 auto;
+  min-width: 2.4em;
+  color: var(--tb-ink-faint);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+.tb-numbered .tb-toc a[aria-current="true"]::before { color: var(--tb-link); }
+
+/* Reading progress. */
+.tb-progress { position: fixed; top: 0; left: 0; right: 0; height: 3px; background: transparent; z-index: 60; }
+.tb-progress > span { display: block; height: 100%; width: 0; background: var(--tb-link); }
+
+/* Key terms and chapter navigation. */
+.tb-glossary { margin: 3em 0 0; padding-top: 1.4em; border-top: 1px solid var(--tb-rule-strong); }
+.tb-glossary h2 { font-size: 1.3em; font-weight: 600; margin: 0 0 .8em; border: 0; padding: 0; background: none; }
+.tb-glossary dt { font-weight: 600; color: var(--tb-ink-strong); margin-top: .8em; }
+.tb-glossary dd { margin: .15em 0 0; padding-left: 0; font-style: normal; color: var(--tb-ink-soft); font-size: .94em; }
+
+.tb-nav { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 2.6em 0 0; }
+.tb-nav a {
+  display: block; padding: 13px 16px;
+  border: 1px solid var(--tb-rule); border-radius: 4px;
+  background: var(--tb-surface); text-decoration: none; color: var(--tb-ink);
+  transition: border-color .15s ease;
+}
+.tb-nav a:hover { border-color: var(--tb-link); }
+.tb-nav .tb-nav__dir { display: block; font-size: .72em; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--tb-ink-faint); margin-bottom: .25em; }
+.tb-nav .tb-nav__next { grid-column: 2; text-align: right; }
+
+/* Accessibility helpers, matching the pair already in exercise.html. */
+.tb-skip { position: absolute; top: -100%; left: 0; z-index: 99999; padding: 8px 16px; background: var(--tb-link); color: #fff; font-size: 14px; font-weight: 600; border-radius: 0 0 4px 0; text-decoration: none; }
+.tb-skip:focus { top: 0; }
+.tb-sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+.tb-page :focus-visible { outline: 2px solid var(--tb-link); outline-offset: 2px; }
+
+/* ===========================================================================
+   Responsive
+   =========================================================================== */
+/* Float the contents into the page margin when there is room beside the band. */
+@media (min-width: {{ layout.tocfloat | default: "1560px" }}) {
+  .tb-page > .tb-toc {
+    position: fixed;
+    top: 104px;
+    left: calc((100vw - {{ layout.contentwidth | default: "1000px" }}) / 2 - 236px);
+    width: 212px;
+    max-width: none;
+    max-height: 72vh;
+    overflow-y: auto;
+    margin: 0;
+    padding-left: 14px;
+    background: transparent;
+    border: 0;
+    border-left: 1px solid var(--tb-rule-strong);
+    border-radius: 0;
+    box-shadow: none;
+    z-index: 20;
+    /* Hidden until the masthead has scrolled away, so it never sits on the
+       dark header where its text would be unreadable. */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .25s ease, visibility .25s ease;
+  }
+  .tb-scrolled > .tb-toc { opacity: 1; visibility: visible; }
+  .tb-page > .tb-toc > summary { display: none; }
+  .tb-page > .tb-toc ol { padding: 0; }
+}
+
+/* Collapse the sidenote rail.  The band narrows to a single-column book width
+   at the same time, so the page never carries a wide empty right margin, and
+   every block -- opener, contents, boxes, prose -- shares one measure. */
+@media (max-width: {{ layout.raildrop | default: "1120px" }}) {
+  #main_content.inner,
+  #header_wrap .inner,
+  #footer_wrap .inner { max-width: calc(var(--tb-measure) + 44px); }
+  .tb-opener,
+  .tb-page > .tb-key,
+  .tb-glossary,
+  .tb-nav,
+  .tb-page > .tb-toc { max-width: none; }
+  .tb-flow { grid-template-columns: minmax(0, 1fr); }
+  .tb-flow > .tb-full { width: auto; }
+  .tb-sn, .tb-mn {
+    float: none; clear: none; width: auto;
+    margin: 1.1em 0 1.1em 1.1em;
+    padding: .7em 0 .7em 1em;
+    border-left: 3px solid var(--tb-rule-strong);
+    display: block;
+  }
+  .tb-sn::before { position: static; margin-right: .5em; }
+}
+@media (max-width: 640px) {
+  .tb-opener__num { font-size: 76px; top: -14px; }
+  .tb-page h1.page__title { font-size: 1.9em; }
+  .tb-nav { grid-template-columns: 1fr; }
+  .tb-nav .tb-nav__next { grid-column: 1; text-align: left; }
+  .tb-flow .tb-lede::first-letter { font-size: 2.8em; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tb-page *, .tb-progress > span { transition: none !important; animation: none !important; }
+}
+
+/* ===========================================================================
+   Print -- the first @media print block in this repo.
+   =========================================================================== */
+@media print {
+  .tb-progress, .tb-copy, .tb-toc, .tb-nav, .tb-skip,
+  #header_wrap, #footer_wrap { display: none !important; }
+  #main_content_wrap, body { background: #fff !important; border: 0 !important; }
+  #main_content.inner { max-width: none; padding: 0; }
+  .tb-page { color: #000; line-height: 1.5; }
+  .tb-flow { display: block; }
+  .tb-sn, .tb-mn {
+    float: none; width: auto; margin: .8em 0 .8em 1.2em;
+    padding-left: 1em; border-left: 2px solid #999; font-size: .82em;
+  }
+  .tb-sn::before { position: static; margin-right: .4em; }
+  .tb-note, .tb-key, .tb-definition, .tb-example, .tb-intuition, .tb-practice,
+  .tb-tip, .tb-warning, .tb-pitfall, .tb-exercise, .tb-ethics {
+    box-shadow: none;
+    border: 1px solid #999;
+    border-left: 4px solid #333;
+    break-inside: avoid;
+  }
+  .tb-solution[open] { break-inside: avoid; }
+  .tb-solution:not([open]) > summary::after { content: " (solution hidden)"; font-weight: 400; }
+  .tb-flow h2, .tb-flow h3 { break-after: avoid; }
+  .tb-fig, .tb-flow pre, .tb-flow table { break-inside: avoid; }
+  .tb-flow a::after { content: " (" attr(href) ")"; font-size: .82em; color: #555; word-break: break-all; }
+  .tb-flow a[href^="#"]::after { content: ""; }
+}
+</style>
+
 <div id="main" role="main">
-  <div class="archive">
+  <a class="tb-skip" href="#tb-content">Skip to assignment content</a>
+
+  <div class="archive tb-page">
+    <div class="tb-flow" id="tb-content">
+
     <h1 class="page__title">{{ page.title }}{% if page.info.points %} ({{page.info.points}} Points){% endif %}</h1>
 
     {% comment %} Optional TILT (Transparency in Learning and Teaching) framing.
@@ -27,42 +763,42 @@ styleguide: "https://www.billmongan.com/Ursinus-CS173/Style-Guide"
     {% if page.info.tilt.criteria %}<p><strong>Criteria:</strong> {{ page.info.tilt.criteria }}</p>{% endif %}
     {% else %}{% if page.info.purpose %}
     <h1>Purpose</h1>
-    {{ page.info.purpose }}
+    <p>{{ page.info.purpose }}</p>
     {% endif %}{% endif %}
-    
+
     {% if page.info.goals %}
     <h1>Assignment Goals</h1>
-    The goals of this assignment are:
+    <p>The goals of this assignment are:</p>
     <ol>
     {% for goal in page.info.goals %}
     <li>{{goal}}</li>
     {% endfor %}
     </ol>
     {% endif %}
-    
+
     {% if page.info.concepts %}
     <h1>Concepts</h1>
-    The key concepts to be developed include:
+    <p>The key concepts to be developed include:</p>
     <ol>
     {% for concept in page.info.concepts %}
     <li>{{concept}}</li>
     {% endfor %}
     </ol>
-    {% endif %}    
-    
+    {% endif %}
+
     {% if page.info.tasks %}
     <h1>Tasks</h1>
-    Your tasks in this assignment are to:
+    <p>Your tasks in this assignment are to:</p>
     <ol>
     {% for task in page.info.tasks %}
     <li>{{task}}</li>
     {% endfor %}
     </ol>
-    {% endif %}     
-    
+    {% endif %}
+
     {% if page.info.readings %}
     <h1>Background Reading and References</h1>
-    Please refer to the following readings and examples offering templates to help get you started:
+    <p>Please refer to the following readings and examples offering templates to help get you started:</p>
     <ul>
     {% for reading in page.info.readings %}
     <li>
@@ -76,37 +812,35 @@ styleguide: "https://www.billmongan.com/Ursinus-CS173/Style-Guide"
     </li>
     {% endfor %}
     </ul>
-    {% endif %}    
+    {% endif %}
 
     <h1>The Assignment</h1>
     {% if page.info.githubclassroom and page.info.githubclassroom.clonelink %}
-    If (and only if) you are using GitHub to submit, you can clone this assignment from GitHub Classroom at <a href="{{ page.info.githubclassroom.clonelink }}">{{ page.info.githubclassroom.clonelink }}</a>.  Otherwise, you may skip this step!
-    <br /><br />
+    <p>If (and only if) you are using GitHub to submit, you can clone this assignment from GitHub Classroom at <a href="{{ page.info.githubclassroom.clonelink }}">{{ page.info.githubclassroom.clonelink }}</a>.  Otherwise, you may skip this step!</p>
     {% endif %}
-    
-    {{ content }} 
-    
+
+    {{ content }}
+
     {% if page.info.questions %}
-    <h2>Design Questions to Help You Begin</h2>
-    Please answer the following questions in your README file before you begin writing your program.
-    
+    <h1>Design Questions to Help You Begin</h1>
+    <p>Please answer the following questions in your README file before you begin writing your program.</p>
     <ol>
     {% for question in page.info.questions %}
     <li>{{question}}</li>
     {% endfor %}
     </ol>
     {% endif %}
-    
-    <h2>Submission</h2>
+
+    <h1>Submission</h1>
     {% if page.info.submission %}
-    {{ page.info.submission }}
+    <p>{{ page.info.submission }}</p>
     {% else %}
-    In your submission, please include answers to any questions asked on the assignment page, as well as the questions listed below, in your README file.  
-    
-    <strong>If you wrote code as part of this assignment, please describe your design, approach, and implementation in a separate document prepared using a word processor or typesetting program such as LaTeX.  This document should include specific instructions on how to build and run your code, and a description of each code module or function that you created suitable for re-use by a colleague.</strong>
-    
-    In your README, please include answers to the following questions:
-    
+    <p>In your submission, please include answers to any questions asked on the assignment page, as well as the questions listed below, in your README file.</p>
+
+    <p><strong>If you wrote code as part of this assignment, please describe your design, approach, and implementation in a separate document prepared using a word processor or typesetting program such as LaTeX.  This document should include specific instructions on how to build and run your code, and a description of each code module or function that you created suitable for re-use by a colleague.</strong></p>
+
+    <p>In your README, please include answers to the following questions:</p>
+
     <ul>
     <li>Describe what you did, how you did it, what challenges you encountered, and how you solved them.</li>
     <li>Please answer any questions found throughout the narrative of this assignment.</li>
@@ -114,19 +848,22 @@ styleguide: "https://www.billmongan.com/Ursinus-CS173/Style-Guide"
     <li>Please identify any and all portions of your submission that were not originally written by you (for example, code originally written by your buddy, or anything taken or adapted from a non-classroom resource).  It is always OK to use your textbook and instructor notes; however, you are certifying that any portions not designated as coming from an outside person or source are your own original work.</li>
     <li>Approximately how many hours it took you to finish this assignment (I will not judge you for this at all...I am simply using it to gauge if the assignments are too easy or hard)?</li>
     <li>Your overall impression of the assignment. Did you love it, hate it, or were you neutral? One word answers are fine, but if you have any suggestions for the future let me know.</li>
-    <li><strong>Using the grading specifications on this page, discuss briefly the grade you would give yourself and why.  Discuss each item in the grading specification.<strong></li>
+    <li><strong>Using the grading specifications on this page, discuss briefly the grade you would give yourself and why.  Discuss each item in the grading specification.</strong></li>
     <li>Any other concerns that you have. For instance, if you have a bug that you were unable to solve but you made progress, write that here. The more you articulate the problem the more partial credit you will receive (it is fine to leave this blank).</li>
-	<li>Please describe any use of outside resources you may have engaged in the completion of this assignment, including the use of generative Artificial Intelligence.</li>
+    <li>Please describe any use of outside resources you may have engaged in the completion of this assignment, including the use of generative Artificial Intelligence.</li>
     </ul>
     {% endif %}
-	
+
+    {% comment %} The rubric is five columns of prose; tb-full breaks it out of the
+    prose measure to the full band, the same escape hatch a wide Markdown table uses
+    with {: .tb-full}. {% endcomment %}
     {% if page.info.rubric %}
     <h1>Assignment Rubric</h1>
-    <table>
+    <table class="tb-full">
     <thead>
       <tr>
         <th>Description</th>
-        <th>Pre-Emerging (< 50%)</th>
+        <th>Pre-Emerging (&lt; 50%)</th>
         <th>Beginning (50%)</th>
         <th>Progressing (85%)</th>
         <th>Proficient (100%)</th>
@@ -145,13 +882,11 @@ styleguide: "https://www.billmongan.com/Ursinus-CS173/Style-Guide"
     </tbody>
     </table>
     {% endif %}
-    
-    
-    
-    {% if page.info.contract %} 
+
+    {% if page.info.contract %}
     {% if page.info.contract.a or page.info.contract.b or page.info.contract.c or page.info.contract.d %}
     <h1>Contract Grading</h1>
-    
+
     {% if page.info.contract.a %}
     <h2>To Receive an A</h2>
     <ul>
@@ -160,7 +895,7 @@ styleguide: "https://www.billmongan.com/Ursinus-CS173/Style-Guide"
     {% endfor %}
     </ul>
     {% endif %}
-    
+
     {% if page.info.contract.b %}
     <h2>To Receive a B</h2>
     <ul>
@@ -169,31 +904,194 @@ styleguide: "https://www.billmongan.com/Ursinus-CS173/Style-Guide"
     {% endfor %}
     </ul>
     {% endif %}
-    
-    {% if page.info.contract.c %}    
+
+    {% if page.info.contract.c %}
     <h2>To Receive a C</h2>
     <ul>
     {% for item in page.info.contract.c %}
     <li>{{item}}</li>
     {% endfor %}
-    </ul>    
+    </ul>
     {% endif %}
-    
-    {% if page.info.contract.d %}    
+
+    {% if page.info.contract.d %}
     <h2>To Receive a D</h2>
     <ul>
     {% for item in page.info.contract.d %}
     <li>{{item}}</li>
     {% endfor %}
-    </ul>        
+    </ul>
     {% endif %}
     {% endif %}
     {% endif %}
-    
+
     {% if layout.styleguide %}
-    <br><p>
-    Please refer to the <a href="{{layout.styleguide}}">Style Guide</a> for code quality examples and guidelines.
-    </p>
+    <p>Please refer to the <a href="{{layout.styleguide}}">Style Guide</a> for code quality examples and guidelines.</p>
     {% endif %}
+
+    </div>
   </div>
 </div>
+
+<script>
+(function () {
+  "use strict";
+  var page = document.querySelector(".tb-page");
+  var flow = document.getElementById("tb-content");
+  if (!page || !flow) { return; }
+  page.classList.add("tb-js");
+
+  // -- 1. GitHub alert syntax -------------------------------------------------
+  // `> [!WARNING]` arrives from kramdown as the literal text "[!WARNING]\n" at
+  // the start of the blockquote's first paragraph, so strip the marker in place
+  // rather than removing the node.
+  var ALERTS = {
+    NOTE: "tb-note", TIP: "tb-tip", IMPORTANT: "tb-key", WARNING: "tb-warning",
+    CAUTION: "tb-pitfall", KEY: "tb-key", DEFINITION: "tb-definition",
+    EXAMPLE: "tb-example", INTUITION: "tb-intuition", PRACTICE: "tb-practice",
+    PITFALL: "tb-pitfall", EXERCISE: "tb-exercise", ETHICS: "tb-ethics"
+  };
+  Array.prototype.forEach.call(flow.querySelectorAll("blockquote"), function (bq) {
+    var first = bq.firstElementChild;
+    if (!first || first.tagName !== "P") { return; }
+    var match = /^\s*\[!([A-Za-z]+)\]\s*/.exec(first.textContent);
+    if (!match) { return; }
+    var cls = ALERTS[match[1].toUpperCase()];
+    if (!cls) { return; }
+    bq.classList.add(cls);
+    // Remove the marker from the first text node only, preserving inline markup.
+    var walker = document.createTreeWalker(first, NodeFilter.SHOW_TEXT, null, false);
+    var node = walker.nextNode();
+    if (node) { node.nodeValue = node.nodeValue.replace(/^\s*\[![A-Za-z]+\]\s*/, ""); }
+  });
+
+  // -- 2. Sidenote reference markers -----------------------------------------
+  Array.prototype.forEach.call(flow.querySelectorAll(".tb-sn"), function (note) {
+    var ref = document.createElement("sup");
+    ref.className = "tb-sn-ref";
+    ref.setAttribute("aria-hidden", "true");
+    note.parentNode.insertBefore(ref, note);
+  });
+
+  // -- 3. Heading ids and hover anchors --------------------------------------
+  var used = Object.create(null);
+  var headings = flow.querySelectorAll("h2, h3");
+  Array.prototype.forEach.call(headings, function (h) {
+    if (!h.id) {
+      var base = (h.textContent || "").toLowerCase().trim()
+        .replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").slice(0, 60) || "section";
+      var id = base, n = 2;
+      while (used[id] || document.getElementById(id)) { id = base + "-" + n++; }
+      used[id] = true;
+      h.id = id;
+    }
+    var a = document.createElement("a");
+    a.className = "tb-anchor";
+    a.href = "#" + h.id;
+    a.setAttribute("aria-label", "Link to this section");
+    a.textContent = "¶";
+    h.insertBefore(a, h.firstChild);
+  });
+
+  // -- 4. Contents -----------------------------------------------------------
+  var toc = document.getElementById("tb-toc");
+  var links = [];
+  if (toc && headings.length > 1) {
+    var list = toc.querySelector("ol");
+    Array.prototype.forEach.call(headings, function (h) {
+      var li = document.createElement("li");
+      if (h.tagName === "H3") { li.className = "tb-toc-h3"; }
+      var a = document.createElement("a");
+      a.href = "#" + h.id;
+      // Drop the injected anchor glyph from the label.
+      a.textContent = (h.textContent || "").replace(/^¶/, "").trim();
+      li.appendChild(a);
+      list.appendChild(li);
+      links.push({ a: a, h: h });
+    });
+    toc.hidden = false;
+  } else if (toc) {
+    toc.parentNode.removeChild(toc);
+  }
+
+  // -- 5. Scrollspy ----------------------------------------------------------
+  if (links.length && "IntersectionObserver" in window) {
+    var visible = [];
+    var spy = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        var i = visible.indexOf(entry.target);
+        if (entry.isIntersecting && i === -1) { visible.push(entry.target); }
+        else if (!entry.isIntersecting && i !== -1) { visible.splice(i, 1); }
+      });
+      var active = visible.length ? visible[0] : null;
+      links.forEach(function (item) {
+        if (active && item.h === active) { item.a.setAttribute("aria-current", "true"); }
+        else { item.a.removeAttribute("aria-current"); }
+      });
+    }, { rootMargin: "-70px 0px -70% 0px" });
+    links.forEach(function (item) { spy.observe(item.h); });
+  }
+
+  // -- 6. Reading progress, and revealing the floating contents --------------
+  var bar = document.querySelector(".tb-progress > span");
+  var header = document.getElementById("header_wrap");
+  var tick = false;
+  var update = function () {
+    if (bar) {
+      var top = flow.getBoundingClientRect().top + window.pageYOffset;
+      var span = flow.offsetHeight - window.innerHeight;
+      var pct = span > 0 ? (window.pageYOffset - top) / span : 0;
+      bar.style.width = Math.max(0, Math.min(1, pct)) * 100 + "%";
+    }
+    var past = window.pageYOffset > (header ? header.offsetHeight : 160) - 40;
+    page.classList.toggle("tb-scrolled", past);
+    tick = false;
+  };
+  window.addEventListener("scroll", function () {
+    if (!tick) { tick = true; window.requestAnimationFrame(update); }
+  }, { passive: true });
+  window.addEventListener("resize", update, { passive: true });
+  update();
+
+  // -- 7. Copy buttons on code blocks ----------------------------------------
+  Array.prototype.forEach.call(flow.querySelectorAll("pre"), function (pre) {
+    if (pre.parentNode.classList && pre.parentNode.classList.contains("tb-pre")) { return; }
+    var host = pre.parentNode.classList && pre.parentNode.classList.contains("highlight")
+      ? pre.parentNode : pre;
+    var wrap = document.createElement("div");
+    wrap.className = "tb-pre";
+    host.parentNode.insertBefore(wrap, host);
+    wrap.appendChild(host);
+
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "tb-copy";
+    btn.textContent = "Copy";
+    btn.addEventListener("click", function () {
+      var text = pre.textContent;
+      var done = function () {
+        btn.textContent = "Copied";
+        window.setTimeout(function () { btn.textContent = "Copy"; }, 1600);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, function () { btn.textContent = "Press Ctrl+C"; });
+      } else {
+        var ta = document.createElement("textarea");
+        ta.value = text; document.body.appendChild(ta); ta.select();
+        try { document.execCommand("copy"); done(); } catch (e) { btn.textContent = "Press Ctrl+C"; }
+        document.body.removeChild(ta);
+      }
+    });
+    wrap.appendChild(btn);
+  });
+
+  // -- 8. Default summary text for solution blocks ---------------------------
+  Array.prototype.forEach.call(flow.querySelectorAll(".tb-solution"), function (d) {
+    if (!d.querySelector("summary")) {
+      var s = document.createElement("summary");
+      s.textContent = {{ layout.solutiontext | default: "Show solution" | jsonify }};
+      d.insertBefore(s, d.firstChild);
+    }
+  });
+}());
+</script>
