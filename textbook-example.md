@@ -6,7 +6,7 @@ info:
   chapter: 3
   subtitle: "How a function can be written in terms of itself, and what the machine does when it is."
   time: "35 minutes"
-  level: "CS 173, Week 4"
+  level: "Week 4"
 
   prereqs:
     - title: "Chapter 2: Functions and Scope"
