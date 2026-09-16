@@ -276,7 +276,8 @@ h2:hover .tb-anchor, h3:hover .tb-anchor, .tb-anchor:focus { opacity: 1; }
    rule without !important.
    =========================================================================== */
 .tb-note, .tb-key, .tb-definition, .tb-example, .tb-intuition, .tb-practice,
-.tb-tip, .tb-warning, .tb-pitfall, .tb-exercise, .tb-ethics {
+.tb-tip, .tb-warning, .tb-pitfall, .tb-exercise, .tb-ethics, .tb-question,
+.tb-quote {
   --tb-accent: #41505e;
   --tb-tint:   #eceff2;
   --tb-edge:   #ccd4db;
@@ -293,7 +294,8 @@ h2:hover .tb-anchor, h3:hover .tb-anchor, .tb-anchor:focus { opacity: 1; }
 }
 .tb-note::before, .tb-key::before, .tb-definition::before, .tb-example::before,
 .tb-intuition::before, .tb-practice::before, .tb-tip::before, .tb-warning::before,
-.tb-pitfall::before, .tb-exercise::before, .tb-ethics::before {
+.tb-pitfall::before, .tb-exercise::before, .tb-ethics::before,
+.tb-question::before {
   display: block;
   margin: 0 -18px .9em;
   padding: 7px 18px;
@@ -307,7 +309,8 @@ h2:hover .tb-anchor, h3:hover .tb-anchor, .tb-anchor:focus { opacity: 1; }
 .tb-note > :last-child, .tb-key > :last-child, .tb-definition > :last-child,
 .tb-example > :last-child, .tb-intuition > :last-child, .tb-practice > :last-child,
 .tb-tip > :last-child, .tb-warning > :last-child, .tb-pitfall > :last-child,
-.tb-exercise > :last-child, .tb-ethics > :last-child { margin-bottom: .55em; }
+.tb-exercise > :last-child, .tb-ethics > :last-child,
+.tb-question > :last-child, .tb-quote > :last-child { margin-bottom: .55em; }
 
 .tb-note::before       { content: "Note"; }
 .tb-key::before        { content: "Key Idea"; }
@@ -319,6 +322,7 @@ h2:hover .tb-anchor, h3:hover .tb-anchor, .tb-anchor:focus { opacity: 1; }
 .tb-warning::before    { content: "Warning"; }
 .tb-pitfall::before    { content: "Common Pitfall"; }
 .tb-ethics::before     { content: "Ethics and AI Literacy"; }
+.tb-question::before   { content: "Question"; }
 .tb-exercise::before   { counter-increment: tb-ex; content: "Exercise " counter(tb-ex); }
 
 /* A data-title always wins over the default label. */
@@ -326,7 +330,8 @@ h2:hover .tb-anchor, h3:hover .tb-anchor, .tb-anchor:focus { opacity: 1; }
 .tb-definition[data-title]::before, .tb-example[data-title]::before,
 .tb-intuition[data-title]::before, .tb-practice[data-title]::before,
 .tb-tip[data-title]::before, .tb-warning[data-title]::before,
-.tb-pitfall[data-title]::before, .tb-ethics[data-title]::before { content: attr(data-title); }
+.tb-pitfall[data-title]::before, .tb-ethics[data-title]::before,
+.tb-question[data-title]::before { content: attr(data-title); }
 .tb-exercise[data-title]::before {
   counter-increment: tb-ex;
   content: "Exercise " counter(tb-ex) " \2014  " attr(data-title);
@@ -343,6 +348,23 @@ h2:hover .tb-anchor, h3:hover .tb-anchor, .tb-anchor:focus { opacity: 1; }
 .tb-intuition  { --tb-accent: #5b3d9e; --tb-tint: #efeafa; --tb-edge: #d3c8ee; }
 .tb-exercise   { --tb-accent: #2d4a8a; --tb-tint: #eaeefa; --tb-edge: #c8d3ee; }
 .tb-ethics     { --tb-accent: #8a2b64; --tb-tint: #faeaf3; --tb-edge: #eec6dd; }
+/* tb-question carries author-supplied numbering ("CTQ 4.1") in its data-title,
+   so it borrows tb-exercise's indigo without tb-exercise's counter. */
+.tb-question   { --tb-accent: #2d4a8a; --tb-tint: #eaeefa; --tb-edge: #c8d3ee; }
+
+/* The fallback box.  Any blockquote that matches no promotion rule lands here
+   rather than falling through to Slate's bare vertical rule, which reads as an
+   unstyled accident next to the boxes above.  It is deliberately quiet: no
+   title bar, a paler tint than any labelled box, and enough top padding to
+   replace the spacing the ::before bar would otherwise have provided.  Genuine
+   pull quotes and analogies are the intended tenants. */
+.tb-quote {
+  --tb-accent: #8894a1;
+  --tb-tint:   #f5f7f8;
+  --tb-edge:   #dde3e8;
+  padding-top: 2px;
+}
+.tb-quote > :first-child { margin-top: .9em; }
 
 /* ===========================================================================
    Collapsible solution.  The repo's first authored use of <details>.
@@ -927,9 +949,46 @@ h2:hover .tb-anchor, h3:hover .tb-anchor, .tb-anchor:focus { opacity: 1; }
     "no-code path":                "tb-note",
     "in this part":                "tb-note",
     "note":                        "tb-note",
-    "answer":                      "tb-note"
+    "answer":                      "tb-note",
+    // Labels the CS374 tutorials bring with them.  `CTQ`, spelled out or not, is
+    // a POGIL critical-thinking question; it carries its own numbering, so it
+    // gets tb-question rather than tb-exercise, whose counter would number it a
+    // second time and disagree with the number the author wrote.
+    "ctq":                         "tb-question",
+    "critical thinking questions": "tb-question",
+    "check your understanding":    "tb-question",
+    "question":                    "tb-question",
+    "before you begin":            "tb-note",
+    "prerequisites":               "tb-note",
+    "code path":                   "tb-note",
+    "try it":                      "tb-example",
+    "common misconception":        "tb-pitfall",
+    "intuition":                   "tb-intuition",
+    "tutorial goal":               "tb-key",
+    "the core idea":               "tb-key"
   };
-  var BOXED = /\btb-(note|key|definition|example|intuition|practice|tip|warning|pitfall|exercise|ethics)\b/;
+  var BOXED = /\btb-(note|key|definition|example|intuition|practice|tip|warning|pitfall|exercise|ethics|question|quote)\b/;
+
+  // Pages in the wild decorate a known label rather than inventing a new one, and
+  // an exact-equality lookup silently misses every decorated form: `Checkpoint 3.`
+  // and `Watch out! Mutable default arguments` both miss entries that are already
+  // in the list above.  Four passes, cheapest first; the first is the original
+  // exact match, so nothing that used to promote stops promoting.
+  function classify(key) {
+    if (LEADINS[key]) { return LEADINS[key]; }
+    // Author-supplied numbering: `Checkpoint 3`, `CTQ 4.1`, `Questions 3-5`.
+    // The number is kept in data-title, so the box still reads "Checkpoint 3".
+    var unnumbered = key.replace(/\s+\d+(?:[.\u2013-]\d+)*$/, "");
+    if (unnumbered !== key && LEADINS[unnumbered]) { return LEADINS[unnumbered]; }
+    // A known label carrying a qualifier: `Watch out! Mutable default arguments`,
+    // `Before You Begin: Prerequisites`, `Do this (Ollama instead)`.
+    var head = key.split(/[!:(]/)[0].trim();
+    if (head !== key && LEADINS[head]) { return LEADINS[head]; }
+    // `Budget note.`, `Disk note.`, `Scope note.`, `Route A note.`
+    if (/\bnote$/.test(key)) { return "tb-note"; }
+    return null;
+  }
+
   Array.prototype.forEach.call(flow.querySelectorAll("blockquote"), function (bq) {
     // Step 1, or a hand-written {: .tb-warning}, has already claimed this one.
     if (BOXED.test(bq.className || "")) { return; }
@@ -941,9 +1000,28 @@ h2:hover .tb-anchor, h3:hover .tb-anchor, .tb-anchor:focus { opacity: 1; }
     while (lead && lead.nodeType === 3 && !lead.nodeValue.trim()) { lead = lead.nextSibling; }
     if (!lead || lead.nodeType !== 1 || lead.tagName !== "STRONG") { return; }
 
-    var label = (lead.textContent || "").trim().replace(/[.:!]+$/, "").trim();
-    var cls = LEADINS[label.toLowerCase()];
+    var raw = (lead.textContent || "").trim();
+    var label = raw.replace(/[.:!]+$/, "").trim();
+    var cls = classify(label.toLowerCase());
     if (!cls) { return; }
+
+    // The label must END a clause before it can be lifted into a title bar.
+    // Terminal punctuation inside the bold span is the author saying the sentence
+    // restarts after the label, and a bold span that is the whole paragraph needs
+    // no punctuation to qualify.  Failing both, look at what follows: a comma or a
+    // lowercase word means the sentence runs THROUGH the label, as in
+    // `**You've succeeded when** the four boxes are checked` and
+    // `**Check Your Understanding**, think each question through`, and lifting it
+    // would sever the sentence.  `**CTQ 4.1** Constant folding is safe` is the
+    // case this has to let through: the label is a tag, not the subject.
+    if (!/[.:!?]$/.test(raw)) {
+      var tail = "", probe = lead.nextSibling;
+      while (probe && !tail) {
+        tail = (probe.textContent || "").replace(/^\s+/, "");
+        probe = probe.nextSibling;
+      }
+      if (/^[,;]/.test(tail) || /^[a-z]/.test(tail)) { return; }
+    }
 
     bq.classList.add(cls);
     bq.setAttribute("data-title", label);
@@ -956,6 +1034,63 @@ h2:hover .tb-anchor, h3:hover .tb-anchor, .tb-anchor:focus { opacity: 1; }
     if (!first.textContent.trim() && !first.firstElementChild) {
       first.parentNode.removeChild(first);
     }
+  });
+
+  // -- 1c. Italic lead-ins ---------------------------------------------------
+  // The chapter pages open a nudge with an ITALIC label rather than a bold one,
+  // with the whole sentence inside the emphasis:
+  //     > *Hint: what does a held-out test actually defend against?*
+  // There are 219 of those against 31 written the long way as
+  // `{: .tb-tip data-title="Hint"}`, so the italic form is the house style and the
+  // attribute list is the exception.  184 of the 219 sit indented inside a
+  // numbered list item, where a kramdown attribute list is fragile; promoting here
+  // works there because the callout selectors are classes, not descendants.
+  var ITALIC_LEADINS = {
+    "hint": "tb-tip", "tip": "tb-tip", "note": "tb-note", "answer": "tb-note",
+    "aside": "tb-note", "remember": "tb-key", "example": "tb-example"
+  };
+  Array.prototype.forEach.call(flow.querySelectorAll("blockquote"), function (bq) {
+    if (BOXED.test(bq.className || "")) { return; }
+    var first = bq.firstElementChild;
+    if (!first || first.tagName !== "P") { return; }
+
+    // The emphasis has to OPEN the paragraph, as the <strong> does in step 1b.
+    var lead = first.firstChild;
+    while (lead && lead.nodeType === 3 && !lead.nodeValue.trim()) { lead = lead.nextSibling; }
+    if (!lead || lead.nodeType !== 1) { return; }
+    if (lead.tagName !== "EM" && lead.tagName !== "I") { return; }
+
+    var match = /^\s*([A-Za-z]+)\s*:\s*/.exec(lead.textContent || "");
+    if (!match) { return; }
+    var cls = ITALIC_LEADINS[match[1].toLowerCase()];
+    if (!cls) { return; }
+
+    bq.classList.add(cls);
+    bq.setAttribute("data-title", match[1]);
+
+    // Drop the `Hint: ` prefix from the first text node only, so inline markup
+    // later in the sentence survives (step 1 does the same for `[!NOTE]`).
+    var walker = document.createTreeWalker(lead, NodeFilter.SHOW_TEXT, null, false);
+    var node = walker.nextNode();
+    if (node) { node.nodeValue = node.nodeValue.replace(/^\s*[A-Za-z]+\s*:\s*/, ""); }
+
+    // When the emphasis wraps the whole paragraph, the italics were carrying the
+    // "this is an aside" signal that the box now carries instead.  Unwrap it, so
+    // these read the same as the hints already tagged {: .tb-tip data-title="Hint"}.
+    if (lead === first.firstElementChild && first.children.length === 1 &&
+        !first.textContent.replace(lead.textContent || "", "").trim()) {
+      while (lead.firstChild) { first.insertBefore(lead.firstChild, lead); }
+      first.removeChild(lead);
+    }
+  });
+
+  // -- 1d. Everything else ---------------------------------------------------
+  // A blockquote that matched none of the rules above used to fall through to the
+  // theme's bare vertical rule, which reads as an unstyled accident sitting next
+  // to the boxes.  Give it the quiet untitled box instead.  Genuine pull quotes
+  // and analogies, which no allowlist can classify, are the intended tenants.
+  Array.prototype.forEach.call(flow.querySelectorAll("blockquote"), function (bq) {
+    if (!BOXED.test(bq.className || "")) { bq.classList.add("tb-quote"); }
   });
 
   // -- 2. Sidenote reference markers -----------------------------------------
