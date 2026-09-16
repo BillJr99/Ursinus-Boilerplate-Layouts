@@ -157,5 +157,3 @@ and keeps the boxes intact.
 Widths are layout-level front matter in `textbook.html`: `contentwidth` (the band, default
 `1000px`), `textmeasure` (the prose column, `680px`), `railwidth`, `railgap`, `raildrop` (the width
 below which the margin rail collapses) and `tocfloat` (the width above which the contents float).
-
-`textbook-example.md` is a complete sample chapter exercising every construct above.
