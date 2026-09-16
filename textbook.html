@@ -17,12 +17,13 @@ layout: default-standard
 # default-wide.html (paddingwidth / minwidth) and are referenced as layout.*
 # ---------------------------------------------------------------------------
 
-contentwidth:   1180px # width of the header/content/footer band (Slate default: 640px)
-textmeasure:    780px # the prose column itself, ~80 characters at 16px
-railwidth:      320px # margin-note / sidenote rail
-railgap:        44px # space between the prose column and the rail
-raildrop:       1200px # below this viewport width the rail collapses inline
-tocfloat:       1700px # above this viewport width the contents float in the page margin
+bandwidth:      min(1760px, 93vw) # the header/content/footer band: scales with the window,
+                                  # a touch narrower than the window itself so the page keeps
+                                  # its margins (Slate default: 640px; assets/ sets 75%)
+textmeasure:    820px # the prose column itself, ~80 characters at 16px
+railgap:        48px # space between the prose column and the rail
+raildrop:       1120px # below this width the rail collapses and sidenotes sit inline
+tocfloat:       1900px # above this viewport width the contents float in the page margin
 
 solutiontext: "Show solution"
 ---
@@ -63,10 +64,15 @@ solutiontext: "Show solution"
      4.56:1, so chapter links are legible without changing the site's palette. */
   --tb-link:         #0e70c2;
 
-  --tb-measure:  {{ layout.textmeasure | default: "780px" }};
-  --tb-rail:     {{ layout.railwidth   | default: "320px" }};
-  --tb-gap:      {{ layout.railgap     | default: "44px"  }};
-  --tb-pull:     calc(-1 * ({{ layout.railwidth | default: "320px" }} + {{ layout.railgap | default: "44px" }}));
+  --tb-measure:  {{ layout.textmeasure | default: "820px" }};
+  --tb-gap:      {{ layout.railgap     | default: "48px"  }};
+  --tb-band:     {{ layout.bandwidth   | default: "min(1760px, 93vw)" }};
+  /* Prose keeps a fixed, readable measure.  Everything that is not prose -- a wide
+     table, a figure, anything marked .tb-full -- should use the window instead of
+     being pinned to that measure, so the rail is simply whatever the band has left
+     after the prose column, floored so sidenotes always have somewhere to sit. */
+  --tb-rail:     max(0px, calc(var(--tb-band) - var(--tb-measure) - var(--tb-gap)));
+  --tb-pull:     calc(-1 * (var(--tb-rail) + var(--tb-gap)));
 }
 
 /* ---------------------------------------------------------------------------
@@ -77,7 +83,7 @@ solutiontext: "Show solution"
    --------------------------------------------------------------------------- */
 #main_content.inner,
 #header_wrap .inner,
-#footer_wrap .inner { max-width: {{ layout.contentwidth | default: "1180px" }}; }
+#footer_wrap .inner { max-width: var(--tb-band); }
 
 /* ===========================================================================
    Typography
@@ -497,7 +503,19 @@ h2:hover .tb-anchor, h3:hover .tb-anchor, .tb-anchor:focus { opacity: 1; }
   background: var(--tb-surface);
   margin: 1.9em 0;
 }
-.tb-tablewrap { overflow-x: auto; max-width: 100%; margin: 1.9em 0; }
+/* A table is not prose and does not want the prose measure.  Let it size to its
+   own columns, never narrower than the text it sits among and never wider than
+   the full band, and scroll only past that.  min-width keeps a narrow table from
+   leaving dead space; max-content lets a wide one break out to the rail the way
+   {: .tb-full} does by hand, which is what six of the forty-five tables on the
+   CS357 Overview page needed. */
+.tb-tablewrap {
+  overflow-x: auto;
+  margin: 1.9em 0;
+  width: max-content;
+  min-width: 100%;
+  max-width: calc(var(--tb-measure) + var(--tb-gap) + var(--tb-rail));
+}
 .tb-tablewrap > table {
   display: table;
   width: 100%;
@@ -665,11 +683,11 @@ h2:hover .tb-anchor, h3:hover .tb-anchor, .tb-anchor:focus { opacity: 1; }
    Responsive
    =========================================================================== */
 /* Float the contents into the page margin when there is room beside the band. */
-@media (min-width: {{ layout.tocfloat | default: "1700px" }}) {
+@media (min-width: {{ layout.tocfloat | default: "1900px" }}) {
   .tb-page > .tb-toc {
     position: fixed;
     top: 104px;
-    left: calc((100vw - {{ layout.contentwidth | default: "1180px" }}) / 2 - 236px);
+    left: calc((100vw - var(--tb-band)) / 2 - 236px);
     width: 212px;
     max-width: none;
     max-height: 72vh;
@@ -696,17 +714,16 @@ h2:hover .tb-anchor, h3:hover .tb-anchor, .tb-anchor:focus { opacity: 1; }
 /* Collapse the sidenote rail.  The band narrows to a single-column book width
    at the same time, so the page never carries a wide empty right margin, and
    every block -- opener, contents, boxes, prose -- shares one measure. */
-@media (max-width: {{ layout.raildrop | default: "1200px" }}) {
-  #main_content.inner,
-  #header_wrap .inner,
-  #footer_wrap .inner { max-width: calc(var(--tb-measure) + 44px); }
+@media (max-width: {{ layout.raildrop | default: "1120px" }}) {
   .tb-opener,
   .tb-page > .tb-key,
   .tb-glossary,
   .tb-nav,
   .tb-page > .tb-toc { max-width: none; }
-  .tb-flow { grid-template-columns: minmax(0, 1fr); }
   .tb-flow > .tb-full { width: auto; }
+  /* There is no rail to break out into down here, so a table scrolls inside the
+     measure rather than past the edge of the page. */
+  .tb-tablewrap { width: auto; min-width: 0; max-width: 100%; }
   .tb-sn, .tb-mn {
     float: none; clear: none; width: auto;
     margin: 1.1em 0 1.1em 1.1em;
